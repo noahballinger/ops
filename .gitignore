@@ -1,0 +1,17 @@
+# secrets & data
+*.env
+config_overrides.json
+backend/data/*.db
+backend/data/odoo_cache/
+**/__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# never commit credentials or source workbooks with real data
+*.xlsx
+!sample_*.xlsx
+node_modules/
+
+# Google OAuth (never commit)
+backend/data/google_client_secret.json
+backend/data/google_token.json

@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="material">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Isha Life · Ordering</title>
+<style>
+/* ============================ THEME TOKENS ============================ */
+:root, html[data-theme="material"]{
+  --bg1:#eaf0f7; --bg2:#f7eafe; --bg3:#eafaf2;
+  --ink:#222a38; --muted:#6c7689; --line:#d7deea;
+  --panel:#ffffff; --panel2:#f1f4fb;
+  --accent:#3b6ef0; --good:#1faf63; --warn:#e0902a; --bad:#e23a4e;
+  --sh-d:#c3ccdb; --sh-l:#ffffff;            /* neumorphic light shadows */
+}
+html[data-theme="dark"]{
+  --bg1:#0f1115; --bg2:#11151c; --bg3:#0f1714; --ink:#e7eaf0; --muted:#9aa3b2;
+  --line:#2a2f3a; --panel:#181b22; --panel2:#1f232c; --accent:#5b8cff;
+  --good:#22c55e; --warn:#f59e0b; --bad:#ef4444; --sh-d:#0b0d11; --sh-l:#252b36;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  color:var(--ink); font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:
+    radial-gradient(1200px 700px at 12% -8%, var(--bg2), transparent 60%),
+    radial-gradient(1100px 800px at 105% 10%, var(--bg3), transparent 55%),
+    var(--bg1);
+  background-attachment:fixed;
+}
+button{font:inherit;cursor:pointer;border:none}
+button:disabled{opacity:.55;cursor:not-allowed}
+input,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);
+  border-radius:9px;padding:8px 10px}
+.muted{color:var(--muted)} .mono{font-variant-numeric:tabular-nums}
+.sub{color:var(--muted);font-size:12.5px}
+.hidden{display:none}
+.err{color:var(--bad);margin-top:10px}
+a{color:var(--accent)}
+
+/* ============================ HEADER ============================ */
+header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
+  padding:12px 22px;backdrop-filter:blur(14px) saturate(1.3);
+  background:linear-gradient(180deg, rgba(255,255,255,.78), rgba(255,255,255,.5));
+  border-bottom:1px solid var(--line)}
+html[data-theme="dark"] header{background:linear-gradient(180deg, rgba(24,27,34,.85), rgba(24,27,34,.55))}
+header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:pointer}
+.spacer{margin-left:auto}
+.pill{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--panel2);
+  color:var(--muted);border:1px solid var(--line);display:inline-flex;align-items:center;gap:7px}
+.iconbtn{width:38px;height:38px;border-radius:11px;display:inline-flex;align-items:center;
+  justify-content:center;font-size:17px}
+.wrap{max-width:1280px;margin:0 auto;padding:22px}
+
+/* ============================ MATERIALS ============================ */
+.mat-slate{
+  background:linear-gradient(160deg,#41495a,#2c323d); color:#eef2f7;
+  background-image:radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.4px);
+  background-size:6px 6px;
+  border:1px solid #20252e;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px -18px rgba(0,0,0,.6);
+  text-shadow:0 1px 1px rgba(0,0,0,.4);
+}
+.mat-white{background:var(--panel);border:1px solid var(--line);
+  box-shadow:8px 8px 20px -12px var(--sh-d), -8px -8px 18px -14px var(--sh-l)}
+.mat-glass-light,.mat-glass-med,.mat-glass-dark{backdrop-filter:blur(12px) saturate(1.4);
+  border-radius:inherit}
+.mat-glass-light{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8), 0 12px 28px -16px rgba(40,60,100,.4)}
+.mat-glass-med{background:rgba(255,255,255,.32);border:1px solid rgba(255,255,255,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 12px 28px -16px rgba(40,60,100,.4)}
+.mat-glass-dark{background:rgba(28,34,48,.45);border:1px solid rgba(255,255,255,.12);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15), 0 14px 30px -16px rgba(0,0,0,.5)}
+/* metallic */
+.mat-brass,.mat-silver{position:relative;color:#3a2c08;border-radius:13px;font-weight:700;
+  text-shadow:0 1px 0 rgba(255,255,255,.45); overflow:hidden}
+.mat-brass{background:linear-gradient(180deg,#fbeec0 0%,#e3c265 32%,#b98f33 52%,#cda74b 70%,#f3e2a6 100%);
+  border:1px solid #94701f;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -3px 6px rgba(90,60,10,.4), 0 8px 16px -8px rgba(120,90,20,.6)}
+.mat-silver{color:#2b3038;background:linear-gradient(180deg,#ffffff 0%,#dfe4ea 32%,#aeb6c0 52%,#cdd3db 70%,#f4f6f9 100%);
+  border:1px solid #9aa2ad;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9), inset 0 -3px 6px rgba(60,70,85,.3), 0 8px 16px -8px rgba(70,80,95,.5)}
+.mat-brass::after,.mat-silver::after{content:"";position:absolute;top:0;left:-30%;width:40%;height:100%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-18deg);
+  transition:left .5s ease}
+.mat-brass:hover::after,.mat-silver:hover::after{left:120%}
+/* candy */
+.mat-candy-red,.mat-candy-green,.mat-candy-blue{color:#fff;border-radius:15px;font-weight:750;
+  text-shadow:0 1px 2px rgba(0,0,0,.32);border:none}
+.mat-candy-red{background:radial-gradient(120% 90% at 50% 16%, #ff8a96 0%, #ff4d5e 46%, #d61f37 100%);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.55), inset 0 -4px 8px rgba(120,0,15,.4), 0 10px 22px -8px rgba(214,31,55,.7)}
+.mat-candy-green{background:radial-gradient(120% 90% at 50% 16%, #8df0b6 0%, #2bb673 46%, #149158 100%);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.55), inset 0 -4px 8px rgba(0,70,40,.4), 0 10px 22px -8px rgba(20,145,88,.7)}
+.mat-candy-blue{background:radial-gradient(120% 90% at 50% 16%, #8fb6ff 0%, #3b6ef0 46%, #244fcf 100%);
+  box-shadow:inset 0 2px 5px rgba(255,255,255,.5), inset 0 -4px 8px rgba(10,30,90,.4), 0 10px 22px -8px rgba(36,79,207,.7)}
+/* paper & light-cardboard buttons — matte, fibrous, soft neumorphic lighting */
+/* all three are tinted light cardboard; texture almost imperceptible */
+.mat-kraft,.mat-recycled,.mat-cardstock{position:relative;font-weight:750;border-radius:13px;
+  text-shadow:0 1px 0 rgba(255,255,255,.4);
+  background-size:8px 8px, 100% 100%;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -3px 7px rgba(110,82,42,.16),
+             0 8px 18px -9px rgba(95,70,38,.5)}
+.mat-kraft{color:#5a4326;border:1px solid #c1a06e;          /* warm cardboard (India) */
+  background-image:radial-gradient(rgba(110,80,40,.03) 1px,transparent 1.6px),linear-gradient(168deg,#dcbd8e,#cba771)}
+.mat-cardstock{color:#3f4750;border:1px solid #c3b59c;      /* cool-tinted cardboard (USA) */
+  background-image:radial-gradient(rgba(70,70,80,.03) 1px,transparent 1.6px),linear-gradient(168deg,#d3c6ac,#c2b393)}
+.mat-recycled{color:#41463a;border:1px solid #b6ab8b;       /* sage-tinted cardboard (Track) */
+  background-image:radial-gradient(rgba(70,75,55,.035) 1px,transparent 1.6px),linear-gradient(168deg,#cdc6a8,#bbb38f)}
+/* heavy slate stone — flat, matte, diffuse shadow, NO gloss */
+.stone{background:#39414e;color:#eef2f7;border:none;border-radius:16px;
+  box-shadow:0 14px 30px -10px rgba(18,24,36,.55)}
+.stone.dim{background:#2f3640}
+.stone-btn{background:#3b4350;color:#eef2f7;border:none;border-radius:16px;font-weight:800;
+  box-shadow:0 14px 30px -10px rgba(18,24,36,.6);transition:transform .1s ease, background .15s ease}
+.stone-btn:hover{background:#434c5b}
+.stone-btn:active{transform:translateY(2px);background:#333b47}
+.stone-btn:disabled{opacity:.6}
+/* render-cheap frosted glass — single blur, one border, no stacked shadows */
+.glass-cheap{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);border-radius:12px}
+/* India list: one blur on the container; rows are plain translucent (cheap to scroll) */
+.ilist{display:flex;flex-direction:column;gap:8px;max-height:54vh;overflow:auto;padding:10px}
+.irow{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 14px;
+  border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+.iname{color:#f1f4f8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46vw}
+.imeta{display:flex;gap:12px;flex-wrap:wrap;margin-top:3px;color:#aab3c1;font-size:13.5px}
+.hts{font-variant-numeric:tabular-nums;color:#dce3ee;background:rgba(255,255,255,.12);
+  padding:1px 7px;border-radius:6px;font-size:12px;letter-spacing:.3px}
+.iqty{display:flex;gap:8px;flex:none}
+.gchip{font-size:13px;font-weight:700;color:#eaf0f7;background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:3px 11px;white-space:nowrap}
+.cf{text-transform:uppercase;font-size:10px;font-weight:800;letter-spacing:.4px;padding:1px 7px;border-radius:999px}
+.cf-high{background:rgba(34,197,94,.25);color:#9ff0bf} .cf-medium{background:rgba(245,158,11,.25);color:#ffd79a}
+.cf-low{background:rgba(255,255,255,.12);color:#cdd6e2}
+.cstrip{display:flex;gap:6px;align-items:center;flex:none}
+/* colored-in-pencil look: muted fill + diagonal pencil-stroke texture */
+.cdot{position:relative;width:17px;height:17px;border-radius:50%;overflow:hidden;
+  border:1px solid rgba(0,0,0,.22)}
+.cdot::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(52deg, rgba(255,255,255,.30) 0 1.2px, transparent 1.2px 3.4px)}
+.cdot.big{width:22px;height:22px;border-width:1.5px}
+.cdot.c-good{background:#5ba265} .cdot.c-ok{background:#5b86c4}
+.cdot.c-thin{background:#cf9c43} .cdot.c-out{background:#cf5b54}
+/* India full review table (dark slate context) */
+.cat-ic{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:20px;flex:none;background:#fff;border:1px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.statrow{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.statc{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:12px;
+  padding:10px 16px;min-width:88px;color:#eef2f7}
+.sn{font-size:22px;font-weight:800}
+.sl{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#9aa3b2}
+.itablewrap{max-height:56vh;overflow:auto;border-radius:12px}
+.itable{width:100%;border-collapse:collapse;font-size:15.5px;color:#e7ecf3}
+.itable th{position:sticky;top:0;background:#2f3640;color:#aab3c1;text-align:right;padding:12px;
+  cursor:pointer;font-weight:700;white-space:nowrap;z-index:1}
+.itable th.l{text-align:left}
+.itable td{padding:10px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,.08);white-space:nowrap}
+.itable td.l{text-align:left}
+.itable tbody tr:hover td{background:rgba(255,255,255,.04)}
+.iqtyinp{width:66px;text-align:right;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);
+  color:#fff;border-radius:8px;padding:5px 7px}
+.iqtyinp.ov{border-color:#f0b34a;color:#ffd79a;font-weight:700}
+.divg{color:#ffd79a;font-weight:700}
+.idrawer{padding:14px 16px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.12)}
+.drawerbody{display:flex;gap:14px;flex-wrap:wrap}
+.dcard{flex:1;min-width:220px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;padding:12px 14px;color:#e7ecf3}
+.dcard h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#9aa3b2}
+/* India split-pane + inspect panel */
+.wrap.india{max-width:min(1720px,96vw)}
+.isplit{display:grid;grid-template-columns:2fr 1fr;gap:16px;height:70vh}
+.ileft{padding:6px;overflow:auto}
+.ileft .itablewrap{max-height:none}
+.iinspect{padding:16px;overflow:auto}
+.itable tr.selrow{cursor:pointer}
+.itable tr.selrow.sel td{background:rgba(91,140,255,.20)}
+.inspbody{display:flex;flex-direction:column;gap:12px}
+.qtyrow{display:flex;gap:14px;flex-wrap:wrap}
+.qtyblock{flex:1;min-width:130px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
+  border-radius:12px;padding:12px 14px}
+.stepbtn{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.22);color:#fff;font-size:20px;line-height:1;cursor:pointer}
+.stepbtn:active{transform:translateY(1px)}
+.iqtyinp.big{width:96px;font-size:23px;font-weight:800;text-align:center;padding:8px}
+@media(max-width:820px){.isplit{grid-template-columns:1fr;height:auto}}
+/* page-scroll lock: only the panels scroll on the India view */
+.india.ilock{height:calc(100vh - 66px);display:flex;flex-direction:column;overflow:hidden}
+.india.ilock .isplit{flex:1;min-height:0;height:auto}
+.india.ilock .bigplace{margin-top:14px;flex:none}
+.placebtn{background:linear-gradient(180deg,#62b178,#3f9a5c);color:#fff;border:none;border-radius:16px;
+  font-weight:800;box-shadow:0 12px 24px -10px rgba(45,130,75,.6)}
+.placebtn:hover{background:linear-gradient(180deg,#6cbd82,#449f60)}
+.placebtn:active{transform:translateY(2px)}
+
+/* LEFT — light ledger-green paper manifest (alternating rows, faint rules) */
+.manifest{color:#37433a;border:1px solid #dbe6cb;border-left:6px solid #8fb886;border-radius:12px;padding:6px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(120,160,110,.07) 27px 28px),
+    linear-gradient(180deg,#fbfdf6,#f3f8ea)}
+.manifest .itable th{background:#eaf2dc;color:#5f7a48;border-bottom:2px solid #cfe0b3;font-size:13px}
+.manifest .itable,.manifest .itable td,.manifest .itable div{color:#33403a}  /* force dark ink on paper */
+.manifest .itable td{border-bottom:1px solid transparent}            /* rules come from the bg */
+.manifest .itable tr.selrow td{background:transparent}
+.manifest .itable tr.selrow:nth-child(odd) td{background:rgba(120,160,110,.04)}
+.manifest .itable tr.selrow:nth-child(even) td{background:rgba(120,160,110,.10)}
+.manifest .itable tr.selrow:hover td{background:rgba(120,160,110,.16)}
+.manifest .itable tr.selrow.sel td{background:#ffffff;border-top:1.5px solid #5f8f57;border-bottom:1.5px solid #5f8f57}
+.manifest .itable tr.selrow.sel td:first-child{border-left:1.5px solid #5f8f57;border-radius:9px 0 0 9px}
+.manifest .itable tr.selrow.sel td:last-child{border-right:1.5px solid #5f8f57;border-radius:0 9px 9px 0}
+.manifest .pname{color:#2a352a;font-weight:600}
+.manifest .imeta{color:#6f7d61}
+.manifest .cat-ic{background:#fff;border:1px solid rgba(0,0,0,.12)}
+.manifest .divg{color:#9a6a14;font-weight:700}
+.manifest .cf-low{background:#dde7cc;color:#5a6a44}
+.manifest .cf-medium{background:#ecd79a;color:#7a5a16}
+.manifest .cf-high{background:#cbe6c2;color:#3c6a32}
+
+/* RIGHT — warm cardboard box with box design cues */
+.boxpanel{background:linear-gradient(165deg,#e4be88,#d2a460);color:#5b3f1d;
+  border:1px solid #b88a4f;border-radius:12px;padding:16px;position:relative;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35), inset 0 -14px 28px rgba(120,75,25,.18)}
+/* sticky packing-tape strip across the top */
+.boxtape{position:sticky;top:0;z-index:3;height:26px;margin:-16px -16px 14px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:4px;
+  font-size:10.5px;font-weight:800;color:#86653a;
+  background:linear-gradient(180deg,#ecdcae,#d6c084);border-bottom:1px solid #b88a4f;
+  box-shadow:0 1px 2px rgba(90,60,20,.3)}
+.boxpanel .pname{color:#4a3214}
+.boxpanel .imeta{color:#7c5d31}
+.boxpanel .cat-ic{background:#fff;border:1px solid rgba(0,0,0,.12)}
+/* inner cards look like box compartments (dashed fold edges) */
+.boxpanel .dcard{background:rgba(255,255,255,.24);border:1px dashed rgba(120,80,30,.4);color:#5b3f1d}
+.boxpanel .dcard h4{color:#8a6a37}
+.boxpanel .divg{color:#9a4a13;font-weight:700}
+.boxpanel .qtyblock{background:rgba(255,255,255,.34);border:1px solid rgba(120,80,30,.3)}
+.boxpanel .iqtyinp.big{background:#fff7ea;color:#5b3f1d;border:1px solid #c79a5b}
+.boxpanel .stepbtn{background:#cfa069;border:1px solid #b07e44;color:#3f2d12}
+.boxpanel .pill{background:rgba(255,255,255,.32);color:#5b3f1d;border:1px solid rgba(120,80,30,.28)}
+.boxpanel .cf-low{background:rgba(255,255,255,.3);color:#5b3f1d}
+.boxpanel .cf-medium{background:#f0cf94;color:#6e4f12}
+.boxpanel .cf-high{background:#c2e0b3;color:#33602a}
+.press{transition:transform .08s ease, box-shadow .12s ease, filter .12s ease}
+.press:active{transform:translateY(2px) scale(.99);filter:brightness(.96);
+  box-shadow:inset 0 2px 5px rgba(90,65,35,.25)}
+/* cardboard */
+.mat-cardboard{position:relative;
+  background:
+    repeating-linear-gradient(90deg, rgba(120,80,30,.05) 0 2px, transparent 2px 6px),
+    linear-gradient(168deg,#e7b87e 0%,#d6a062 46%,#c8915288 47%,#d49f60 100%);
+  border:1px solid #b07e44;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -10px 26px rgba(120,75,25,.28),
+             0 22px 40px -22px rgba(90,60,20,.7);
+  color:#5e3f1c}
+
+/* ============================ DASHBOARD ============================ */
+.dash{display:grid;grid-template-columns:repeat(auto-fill, 168px);grid-auto-rows:168px;
+  gap:20px;justify-content:center;align-content:start}
+.widget{position:relative;border-radius:22px}
+.w-1x1{grid-column:span 1;grid-row:span 1}
+.w-2x1{grid-column:span 2;grid-row:span 1}
+.w-2x2{grid-column:span 2;grid-row:span 2}
+.w-3x1{grid-column:span 3;grid-row:span 1}
+.widget.dragover{outline:2px dashed var(--accent);outline-offset:4px;border-radius:22px}
+.whandle{position:absolute;top:8px;left:10px;z-index:6;cursor:grab;color:rgba(0,0,0,.28);
+  font-size:14px;user-select:none;opacity:0;transition:opacity .15s}
+.widget:hover .whandle{opacity:1}
+.wbody{position:absolute;inset:0;border-radius:22px;padding:16px;display:flex;flex-direction:column}
+.wtitle{font-size:11px;text-transform:uppercase;letter-spacing:.6px;opacity:.7;font-weight:700}
+
+/* ---------- Ordering box: splits open like double doors ---------- */
+.obox{position:absolute;inset:0;cursor:pointer;user-select:none;perspective:900px}
+/* clipping wrapper so the split halves slide away within the box footprint */
+.obox-inner{position:absolute;inset:0;border-radius:22px;overflow:hidden;
+  background:radial-gradient(120% 120% at 50% 40%, #b58c55, #8f6c3c);
+  box-shadow:inset 0 14px 30px rgba(70,45,12,.5), inset 0 -6px 14px rgba(70,45,12,.35)}
+/* the 3 paper buttons sit underneath, revealed as the box splits */
+.obox .menu{position:absolute;inset:0;display:grid;grid-template-rows:1fr 1fr 1fr;gap:11px;padding:13px;z-index:1;pointer-events:none}
+.obox[data-state="open"] .menu{pointer-events:auto}
+.obox[data-state="open"] .door,.obox[data-state="open"] .tape-v,
+.obox[data-state="open"] .label,.obox[data-state="open"] .hint{pointer-events:none}
+.obox .menu button{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  gap:14px;font-size:22px;font-weight:800;letter-spacing:.3px;border-radius:13px;opacity:0;transform:translateY(12px)}
+.ic{display:inline-flex;flex:none;width:26px;height:26px}
+.ic svg{width:100%;height:100%}
+.obox .menu .ic{width:40px;height:40px}
+.obox .menu .emo{font-size:34px;line-height:1}
+/* the two cardboard halves that cover the buttons when closed */
+.obox .door{position:absolute;left:0;right:0;height:50.5%;z-index:2;backface-visibility:hidden;
+  transition:transform .55s cubic-bezier(.5,.02,.3,1), opacity .45s ease}
+.obox .door.dl{top:0;transform-origin:top center;border-radius:22px 22px 5px 5px;
+  box-shadow:inset 0 -3px 7px rgba(90,60,20,.22)}
+.obox .door.dr{bottom:0;transform-origin:bottom center;border-radius:5px 5px 22px 22px;
+  box-shadow:inset 0 3px 7px rgba(90,60,20,.22)}
+/* centre decorations on the closed box (tape seam + shipping label) */
+.obox .tape-v{position:absolute;left:0;right:0;top:calc(50% - 13px);height:26px;z-index:3;
+  background:linear-gradient(180deg, rgba(214,196,150,0), rgba(214,196,150,.95) 25%, rgba(196,176,128,.95) 75%, rgba(214,196,150,0));
+  box-shadow:0 0 2px rgba(90,60,20,.3);transition:opacity .25s}
+.obox .label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:4;
+  background:#fff;border-radius:6px;padding:9px 16px;text-align:center;
+  box-shadow:0 5px 12px -5px rgba(80,50,15,.7);transition:opacity .25s, transform .25s}
+.obox .label .big{font-weight:850;letter-spacing:1px;color:#33414f;font-size:19px}
+.obox .barcode{height:13px;margin-top:5px;border-radius:2px;opacity:.85;
+  background:repeating-linear-gradient(90deg,#222 0 2px,#fff 2px 4px,#222 4px 5px,#fff 5px 9px)}
+.obox .hint{position:absolute;left:0;right:0;bottom:9px;z-index:4;text-align:center;
+  font-size:11px;color:#7a5526;transition:opacity .25s}
+/* OPEN: doors swing apart, decorations fade, buttons pop in */
+.obox[data-state="open"] .door.dl{transform:rotateX(108deg)}
+.obox[data-state="open"] .door.dr{transform:rotateX(-108deg)}
+.obox[data-state="open"] .tape-v,
+.obox[data-state="open"] .hint{opacity:0}
+.obox[data-state="open"] .label{opacity:0;transform:translate(-50%,-50%) scale(.8)}
+.obox[data-state="open"] .menu button{animation:popBtn .42s both}
+.obox[data-state="open"] .menu button:nth-child(1){animation-delay:.12s}
+.obox[data-state="open"] .menu button:nth-child(2){animation-delay:.19s}
+.obox[data-state="open"] .menu button:nth-child(3){animation-delay:.26s}
+@keyframes popBtn{from{opacity:0;transform:translateY(12px) scale(.94)}to{opacity:1;transform:none}}
+.badge{position:absolute;top:-10px;right:-10px;z-index:10;min-width:30px;height:30px;padding:0 8px;
+  border-radius:999px;display:none;align-items:center;justify-content:center;color:#fff;font-weight:800;
+  font-size:13px;background:radial-gradient(120% 90% at 50% 18%,#ff8a96,#e23a4e 60%,#b81a30);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.5), 0 6px 14px -4px rgba(200,20,45,.8);
+  animation:badgePop .3s ease}
+@keyframes badgePop{from{transform:scale(.4)}to{transform:scale(1)}}
+
+/* ============================ VIEWS ============================ */
+.viewhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.viewhead h2{margin:0;font-size:22px;font-weight:800}
+.bigplace{width:100%;max-width:520px;margin:0 auto;display:block;padding:26px;border-radius:20px;
+  font-size:20px;font-weight:800;letter-spacing:.3px}
+.card{border-radius:18px;padding:18px;margin-bottom:18px}
+.list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;padding-right:6px}
+.li{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:11px 14px;
+  border-radius:13px}
+.chip{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700}
+.chip.sea{background:#e2f0ff;color:#1d6fd0} .chip.air{background:#efe4ff;color:#7a3ddc}
+html[data-theme="dark"] .chip.sea{background:#16314d;color:#7db8ff}
+html[data-theme="dark"] .chip.air{background:#2c1f47;color:#c7a4ff}
+
+/* ---------- Track split-pane ---------- */
+.track{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:18px;height:74vh}
+.track-list{overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:6px}
+.ocard{border-radius:15px;padding:14px;cursor:pointer;border:1px solid var(--line);
+  background:var(--panel);transition:transform .12s, box-shadow .15s}
+.ocard:hover{transform:translateY(-2px);box-shadow:0 10px 22px -14px rgba(40,60,100,.5)}
+.ocard.sel{outline:2px solid var(--accent);outline-offset:0}
+.ocard .reddot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-left:6px}
+.track-detail{overflow:auto;border-radius:18px;padding:20px}
+.track-empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted)}
+/* horizontal timeline */
+.timeline{display:flex;gap:0;overflow-x:auto;padding:30px 6px 16px;scroll-snap-type:x proximity}
+.tlnode{flex:0 0 200px;scroll-snap-align:start;position:relative;padding:0 14px}
+.tlnode::before{content:"";position:absolute;top:-14px;left:0;right:0;height:3px;background:var(--line)}
+.tlnode:first-child::before{left:50%} .tlnode:last-child::before{right:50%}
+.tldot{position:absolute;top:-21px;left:calc(50% - 8px);width:16px;height:16px;border-radius:50%;
+  background:var(--accent);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
+.tldot.unread{background:var(--bad);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 1px var(--line)}50%{box-shadow:0 0 0 5px rgba(226,58,78,.25)}}
+.tlcard{border-radius:13px;padding:11px 12px;text-align:center}
+.tlcard .t{font-weight:750;font-size:13px} .tlcard .n{font-size:12px;color:var(--muted);margin-top:3px}
+.tltime{font-size:11px;color:var(--muted);margin-top:6px}
+
+/* ---------- settings menu ---------- */
+.menu-pop{position:absolute;right:18px;top:60px;z-index:50;min-width:280px;border-radius:16px;padding:14px}
+.swatch{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer}
+.swatch:hover{background:rgba(0,0,0,.05)} .swatch.on{outline:2px solid var(--accent)}
+.dot{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+
+/* motion */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.view{animation:fadeUp .25s ease both}
+.backbtn{padding:8px 14px;border-radius:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="brand">📦 Isha Life · Ordering</h1>
+  <span class="spacer"></span>
+  <span class="pill" id="syncBadge" style="display:none"></span>
+  <span class="pill" id="userPill" style="display:none"></span>
+  <button class="iconbtn mat-white press" id="gearBtn" title="Settings">⚙</button>
+  <button class="backbtn mat-white press" id="logoutBtn" style="display:none">Log out</button>
+</header>
+<div id="view"></div>
+
+<script>
+"use strict";
+/* ===================== helpers ===================== */
+const $=(s,r)=>(r||document).querySelector(s);
+const api=(p,o)=>fetch(p,o).then(r=>r.ok?r.json():r.json().then(e=>Promise.reject(e)).catch(()=>Promise.reject({detail:r.statusText})));
+const f0=x=>x==null?'—':Math.round(x).toLocaleString();
+function el(tag,attrs,kids){const n=document.createElement(tag);
+  if(attrs)for(const k in attrs){const v=attrs[k];if(v==null)continue;
+    if(k==='class')n.className=v;else if(k==='html')n.innerHTML=v;
+    else if(k.slice(0,2)==='on')n.addEventListener(k.slice(2).toLowerCase(),v);
+    else n.setAttribute(k,v);}
+  const add=c=>{if(c==null)return;if(Array.isArray(c)){c.forEach(add);return;}
+    n.appendChild(typeof c==='string'?document.createTextNode(c):c);};
+  (kids||[]).forEach(add);return n;}
+function ago(s){if(s==null)return'never';if(s<60)return'just now';
+  if(s<3600)return Math.round(s/60)+'m ago';if(s<86400)return Math.round(s/3600)+'h ago';
+  return Math.round(s/86400)+'d ago';}
+function fmtTime(t){return t?t.slice(0,16).replace('T',' '):'';}
+/* flat, single-stroke line icons (inherit currentColor) */
+const ICONS={
+  flag:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18" stroke="#7a5a33" stroke-width="1.8"/><path d="M5 4h13l-3 4 3 4H5z" fill="#c8102e" stroke="#9c0c24" stroke-width="1.4"/><path d="M5 4h13" stroke="#1d3a8a" stroke-width="0"/><path d="M5 5.3h13M5 6.9h11.5M5 8.5h13M5 10.1h11.5" stroke="#fff" stroke-width=".7" opacity=".85"/><rect x="5" y="4" width="6" height="4.2" fill="#1d3a8a"/></svg>',
+  wheel:'<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"><circle cx="12" cy="12" r="9" fill="#ff9933"/><circle cx="12" cy="12" r="9" fill="none" stroke="#138808" stroke-width="2"/><g stroke="#0a3d91" stroke-width="1.3"><circle cx="12" cy="12" r="5.4" fill="#fff"/><path d="M12 6.6v10.8M6.6 12h10.8M8.2 8.2l7.6 7.6M15.8 8.2l-7.6 7.6"/></g><circle cx="12" cy="12" r="1.3" fill="#0a3d91"/></svg>',
+  truck:'<svg viewBox="0 0 24 24" fill="none" stroke-linejoin="round"><path d="M2.5 6.5h12v9h-12z" fill="#3b6ef0" stroke="#244fcf" stroke-width="1.3"/><path d="M14.5 9.5h4l3 3v3h-7z" fill="#9fc0ff" stroke="#244fcf" stroke-width="1.3"/><circle cx="6.5" cy="17.5" r="2" fill="#2b3038" stroke="#000" stroke-width=".6"/><circle cx="17.5" cy="17.5" r="2" fill="#2b3038" stroke="#000" stroke-width=".6"/></svg>'};
+function icon(name){const s=el('span',{class:'ic'});s.innerHTML=ICONS[name]||'';return s;}
+/* category → tactile icon disc (hover = name); matches the original tool */
+function cleanCat(c){return((c||'').split('/').pop()||'').trim()||'Uncategorised';}
+const CAT_ICONS=[[/cloth|accessor/i,'👕'],[/digital/i,'📱'],[/media/i,'🎬'],[/lot and home/i,'🏗️'],
+  [/abode/i,'🛏️'],[/solar/i,'☀️'],[/snack/i,'🍪'],[/grocery/i,'🛒'],[/natural food|food/i,'🌾'],
+  [/devi temple/i,'🛕'],[/temple|consecrat/i,'🪔'],[/body|cosmet|skin|soap|perfume|balm|bloom/i,'🧴'],
+  [/yoga/i,'🧘'],[/health|immun/i,'💊'],[/rudraksh|spatika|mala/i,'📿'],[/combo/i,'🎁'],[/event/i,'🎟️'],
+  [/program/i,'🗓️'],[/maintenance/i,'🔧'],[/donation/i,'🙏'],[/legal/i,'⚖️'],[/expense/i,'💸'],
+  [/supplies/i,'🧰'],[/amazon/i,'📦'],[/home/i,'🏡'],[/^isha life usa$/i,'🛍️']];
+function catIcon(category){const clean=cleanCat(category);let ic='📦';
+  for(const[re,e]of CAT_ICONS){if(re.test(clean)){ic=e;break;}}
+  return el('span',{class:'cat-ic',title:clean},[ic]);}
+
+const state={me:null,sync:{},unacked:0,view:'login'};
+
+/* ===================== themes ===================== */
+const THEMES=[['material','Material Light','#3b6ef0'],['dark','Dark','#1f232c']];
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);
+  try{localStorage.setItem('isha_theme',t)}catch(e){}state.theme=t;}
+function currentTheme(){try{return localStorage.getItem('isha_theme')||'material'}catch(e){return'material'}}
+
+/* ===================== routing ===================== */
+function navigate(p){const h='#'+p;if(location.hash===h)route();else location.hash=h;}
+function route(){
+  if(!(state.me&&state.me.logged_in)){renderLogin();return;}
+  const h=location.hash.replace(/^#/,'')||'/';
+  document.body.style.overflow=(h==='/order/india')?'hidden':'';   // lock page scroll on India
+  if(h==='/'||h==='')renderDashboard();
+  else if(h==='/order/india')renderIndia();
+  else if(h==='/order/usa')renderUSA();
+  else if(h==='/order/track')renderTrack();
+  else renderDashboard();
+}
+window.addEventListener('hashchange',route);
+
+/* ===================== boot / auth ===================== */
+function boot(){
+  applyTheme(currentTheme());
+  api('/api/me').then(m=>{state.me=m;
+    if(m.logged_in){paintAuth();refreshSync();loadBadge();route();}
+    else renderLogin();
+  }).catch(renderLogin);
+}
+function paintAuth(){
+  const u=$('#userPill'),lo=$('#logoutBtn'),sb=$('#syncBadge');
+  if(state.me&&state.me.logged_in){
+    u.style.display='inline-flex';u.textContent='◉ '+(state.me.name||state.me.login);
+    lo.style.display='';sb.style.display='inline-flex';
+  }else{u.style.display='none';lo.style.display='none';sb.style.display='none';}
+}
+$('#brand').onclick=()=>{ if(state.me&&state.me.logged_in) navigate('/'); };
+$('#logoutBtn').onclick=()=>api('/api/logout',{method:'POST'}).then(()=>{state.me={logged_in:false};paintAuth();renderLogin();});
+$('#gearBtn').onclick=toggleMenu;
+
+function refreshSync(){api('/api/odoo/status').then(s=>{state.sync=s.sync||{};paintSync();}).catch(()=>{});}
+function paintSync(){const b=$('#syncBadge');if(!b)return;const sy=state.sync||{};
+  const ok=sy.healthy,col=ok?'var(--good)':(sy.status==='never'?'var(--bad)':'var(--warn)');
+  b.innerHTML='';b.style.cursor='pointer';b.title='Click to sync Odoo';b.onclick=syncNow;
+  b.appendChild(el('span',{style:`width:8px;height:8px;border-radius:50%;background:${col}`}));
+  b.appendChild(document.createTextNode(sy.status==='ok'?`Odoo · ${ago(sy.age_seconds)}`+(sy.is_stale?' · stale':''):
+    sy.status==='degraded'?'Odoo · degraded':sy.status==='never'?'Odoo · not synced':'Odoo'));}
+function syncNow(){const b=$('#syncBadge');if(b)b.textContent='Odoo · syncing…';
+  api('/api/odoo/sync',{method:'POST'}).then(s=>{state.sync=s;paintSync();if(state.view==='india')renderIndia();}).catch(refreshSync);}
+
+/* badge: unacknowledged timeline events for THIS user (server-tracked) */
+function loadBadge(){api('/api/events').then(d=>{state.unacked=d.unacked||0;state.events=d.events||[];paintBadge();}).catch(()=>{});}
+function paintBadge(){document.querySelectorAll('.badge').forEach(b=>{const n=state.unacked||0;
+  b.textContent=n>99?'99+':n;b.style.display=n>0?'flex':'none';});}
+function ackOrder(orderId){return api('/api/events/ack',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({order_id:orderId})}).then(r=>{state.unacked=r.unacked;paintBadge();});}
+
+/* ===================== LOGIN ===================== */
+function renderLogin(){
+  state.view='login';paintAuth();
+  const v=$('#view');v.innerHTML='';
+  const btn=el('button',{class:'mat-candy-blue press',style:'width:100%;padding:15px;border-radius:14px;font-size:16px;display:flex;gap:10px;align-items:center;justify-content:center',
+    onclick:()=>location.href='/api/auth/google/login'},['🔐 Sign in with Google']);
+  const card=el('div',{class:'mat-white card',style:'max-width:420px;margin:14vh auto 0;text-align:center'},[
+    el('div',{style:'font-size:46px;margin-bottom:6px'},['📦']),
+    el('h2',{style:'margin:0 0 6px;font-size:21px'},['Isha Life · Ordering']),
+    el('div',{class:'sub',style:'margin-bottom:22px'},['Sign in with your authorized Google account.']),
+    btn]);
+  v.appendChild(el('div',{class:'wrap view'},[card]));
+}
+
+/* ===================== DASHBOARD ===================== */
+const WIDGETS={
+  ordering:{size:'w-2x2',render:wOrdering},
+  sync:{size:'w-2x1',render:wSync},
+  activity:{size:'w-2x1',render:wActivity},
+};
+function dashLayout(){try{const l=JSON.parse(localStorage.getItem('dash_layout'));
+  if(Array.isArray(l)&&l.length)return l.filter(id=>WIDGETS[id]);}catch(e){}
+  return ['ordering','sync','activity'];}
+function saveLayout(l){try{localStorage.setItem('dash_layout',JSON.stringify(l))}catch(e){}}
+let _dragId=null;
+function renderDashboard(){
+  state.view='dash';
+  const v=$('#view');v.innerHTML='';
+  const wrap=el('div',{class:'wrap view'});
+  wrap.appendChild(el('div',{class:'viewhead'},[
+    el('h2',null,['Dashboard']),
+    el('span',{class:'sub'},['Drag the ⠿ handle to rearrange your widgets.'])]));
+  const grid=el('div',{class:'dash'});
+  dashLayout().forEach(id=>{
+    const def=WIDGETS[id];if(!def)return;
+    const w=el('div',{class:'widget '+def.size});
+    const handle=el('div',{class:'whandle',draggable:'true',title:'Drag to move'},['⠿']);
+    handle.addEventListener('dragstart',e=>{_dragId=id;e.dataTransfer.effectAllowed='move';});
+    w.addEventListener('dragover',e=>{e.preventDefault();w.classList.add('dragover');});
+    w.addEventListener('dragleave',()=>w.classList.remove('dragover'));
+    w.addEventListener('drop',e=>{e.preventDefault();w.classList.remove('dragover');
+      if(_dragId&&_dragId!==id){const l=dashLayout();const from=l.indexOf(_dragId),to=l.indexOf(id);
+        l.splice(from,1);l.splice(to,0,_dragId);saveLayout(l);renderDashboard();}});
+    w.appendChild(handle);
+    def.render(w);
+    grid.appendChild(w);
+  });
+  wrap.appendChild(grid);
+  v.appendChild(wrap);
+  paintBadge();
+}
+
+/* ---- Ordering widget (the morphing box) ---- */
+function wOrdering(w){
+  const box=el('div',{class:'obox','data-state':'box'});
+  box.appendChild(el('div',{class:'badge'},['0']));
+  const inner=el('div',{class:'obox-inner'});
+  // buttons underneath (paper / light cardboard)
+  const mk=(cls,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},[label]);
+  const mki=(cls,emoji,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},
+    [el('span',{class:'emo'},[emoji]),el('span',null,[label])]);
+  inner.appendChild(el('div',{class:'menu'},[
+    mki('mat-cardstock','🇺🇸','USA','/order/usa'),
+    mki('mat-kraft','🇮🇳','India','/order/india'),
+    mki('mat-recycled','📦','Track Orders','/order/track')]));
+  // the two cardboard halves that split apart
+  inner.appendChild(el('div',{class:'door dl mat-cardboard'}));
+  inner.appendChild(el('div',{class:'door dr mat-cardboard'}));
+  // centre tape + shipping label + hint
+  inner.appendChild(el('div',{class:'tape-v'}));
+  inner.appendChild(el('div',{class:'label'},[el('div',{class:'big'},['ORDERS']),el('div',{class:'barcode'})]));
+  inner.appendChild(el('div',{class:'hint'},['tap to open']));
+  box.appendChild(inner);
+  box.addEventListener('click',()=>box.setAttribute('data-state',box.getAttribute('data-state')==='open'?'box':'open'));
+  w.appendChild(box);
+}
+function wSync(w){
+  const body=el('div',{class:'wbody mat-slate'});
+  const sy=state.sync||{};
+  body.appendChild(el('div',{class:'wtitle'},['Odoo sync']));
+  body.appendChild(el('div',{style:'margin:auto 0;display:flex;flex-direction:column;gap:6px'},[
+    el('div',{style:'font-size:26px;font-weight:800'},[sy.status==='ok'?f0(sy.cached_products)+' SKUs':(sy.status||'—')]),
+    el('div',{class:'sub',style:'color:#c7d0dc'},[sy.status==='ok'?'synced '+ago(sy.age_seconds):'tap Sync in header'])]));
+  const b=el('button',{class:'mat-silver press',style:'padding:8px;border-radius:11px',onclick:syncNow},['↻ Sync now']);
+  body.appendChild(b);w.appendChild(body);
+}
+function wActivity(w){
+  const body=el('div',{class:'wbody mat-glass-light'});
+  body.appendChild(el('div',{class:'wtitle'},['Needs review']));
+  const n=state.unacked||0;
+  body.appendChild(el('div',{style:'margin:auto 0'},[
+    el('div',{style:'font-size:34px;font-weight:850;color:'+(n?'var(--bad)':'var(--good)')},[String(n)]),
+    el('div',{class:'sub'},[n?'unacknowledged order updates':'all caught up 🎉'])]));
+  body.appendChild(el('button',{class:'mat-candy-blue press',style:'padding:8px;border-radius:11px',
+    onclick:()=>navigate('/order/track')},['Open Track Orders']));
+  w.appendChild(body);
+}
+
+/* ===================== INDIA VIEW ===================== */
+function backHome(){return el('button',{class:'backbtn mat-white press',onclick:()=>navigate('/')},['← Dashboard']);}
+function coverText(m){if(m==null||!isFinite(m))return'—';const mo=Math.floor(m),d=Math.round((m-mo)*30);
+  if(mo<=0&&d<=0)return'0 d';const p=[];if(mo>0)p.push(mo+' mo');if(d>0)p.push(d+' d');return p.join(' ');}
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function projMonth(i){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+i+1);return MONTHS[d.getMonth()];}
+function svgEl(tag,attrs,kids){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  if(attrs)for(const k in attrs){if(attrs[k]!=null)n.setAttribute(k,attrs[k]);}
+  (kids||[]).forEach(c=>{if(c==null)return;n.appendChild(typeof c==='string'?document.createTextNode(c):c);});return n;}
+
+const IST={orderId:null,data:null,filters:{q:'',cat:'ALL',onlyOrdered:true,onlyAir:false,onlyFlag:false},
+  sort:{k:'_qty',dir:-1},expanded:new Set()};
+
+function renderIndia(){
+  state.view='india';
+  const v=$('#view');v.innerHTML='';
+  const wrap=el('div',{class:'wrap view'});
+  wrap.appendChild(el('div',{class:'viewhead'},[backHome(),el('h2',null,['🇮🇳 Order from India']),
+    el('span',{class:'pill'},['quarterly'])]));
+  const panel=el('div',{class:'stone',style:'padding:16px'},
+    [el('div',{style:'color:#aeb7c4'},['Loading suggested order from Odoo…'])]);
+  wrap.appendChild(panel);v.appendChild(wrap);
+  // ensure a working draft order, then load its rich lines
+  api('/api/india/draft',{method:'POST'}).then(r=>{IST.orderId=r.id;return api('/api/orders/'+r.id+'/lines');})
+    .then(d=>{IST.data=d;renderIndiaTable();})
+    .catch(e=>{const msg=(e&&(e.detail||e.error))||'error';
+      panel.innerHTML='';panel.appendChild(el('div',{style:'color:#ffb4bc'},
+        [/not found/i.test(msg)?'Backend not found — restart the server to load the India endpoints.':msg]));});
+}
+
+function iFiltered(){
+  const d=IST.data,fl=IST.filters;
+  let rows=(d.lines||[]).filter(l=>{
+    if(fl.cat!=='ALL'&&l.category!==fl.cat)return false;
+    if(fl.onlyOrdered&&!(l.final_sea_qty||l.final_air_qty))return false;
+    if(fl.onlyAir&&!l.final_air_qty)return false;
+    if(fl.onlyFlag&&!l.compliance_flag)return false;
+    if(fl.q){const s=((l.name||'')+' '+(l.us_sku||'')+' '+l.global_sku).toLowerCase();
+      if(!s.includes(fl.q.toLowerCase()))return false;}
+    return true;});
+  const keyOf=l=>IST.sort.k==='_qty'?(l.final_sea_qty+l.final_air_qty):l[IST.sort.k];
+  rows.sort((a,b)=>{const x=keyOf(a),y=keyOf(b);
+    if(typeof x==='string')return IST.sort.dir*((x||'').localeCompare(y||''));
+    return IST.sort.dir*(((x==null?0:x)-(y==null?0:y)));});
+  return rows;
+}
+function iStatRow(rows){
+  const tot=rows.reduce((a,l)=>{a.sea+=l.final_sea_qty;a.air+=l.final_air_qty;
+    if(l.final_sea_qty||l.final_air_qty)a.skus++;if(l.final_air_qty)a.air1++;return a;},{sea:0,air:0,skus:0,air1:0});
+  IST._skus=tot.skus;
+  return el('div',{class:'statrow',id:'istat'},[
+    statc(f0(rows.length),'rows'),statc(f0(tot.skus),'SKUs'),
+    statc(f0(tot.sea),'🚢 sea'),statc(f0(tot.air),'✈️ air'),statc(f0(tot.air1),'air splits')]);
+}
+function renderIndiaTable(){
+  const v=$('#view');
+  const prevScroll=(document.querySelector('.ileft')||{}).scrollTop||0;
+  v.innerHTML='';
+  const d=IST.data,fl=IST.filters;
+  const wrap=el('div',{class:'wrap view india ilock'});
+  wrap.appendChild(el('div',{class:'viewhead',style:'justify-content:space-between'},[
+    el('div',{style:'display:flex;gap:12px;align-items:center;flex-wrap:wrap'},[backHome(),
+      el('h2',null,['🇮🇳 Order from India']),
+      el('span',{class:'pill'},[d.order.name]),el('span',{class:'pill'},[d.order.status])]),
+    el('div',{style:'display:flex;gap:10px'},[
+      el('a',{class:'pill',href:'/api/orders/'+IST.orderId+'/export.csv'},['⤓ CSV']),
+      el('a',{class:'pill',href:'/api/orders/'+IST.orderId+'/export.xlsx'},['⤓ XLSX'])])]));
+
+  const rows=iFiltered();
+  if(!rows.find(r=>r.global_sku===IST.selected)) IST.selected=rows.length?rows[0].global_sku:null;
+  const sel=(d.lines||[]).find(l=>l.global_sku===IST.selected);
+  IST._skus=(d.lines||[]).filter(l=>l.final_sea_qty||l.final_air_qty).length;
+
+  const cats=['ALL'].concat(Array.from(new Set((d.lines||[]).map(l=>l.category).filter(Boolean))).sort());
+  const q=el('input',{id:'iq',placeholder:'Search name / SKU…',value:fl.q,style:'min-width:200px',
+    oninput:e=>{fl.q=e.target.value;IST.focus=true;clearTimeout(window._it);window._it=setTimeout(renderIndiaTable,200);}});
+  const cat=el('select',{onchange:e=>{fl.cat=e.target.value;renderIndiaTable();}},
+    cats.map(c=>el('option',{value:c,selected:c===fl.cat?'selected':null},[c])));
+  wrap.appendChild(el('div',{class:'mat-white',style:'padding:12px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px;border-radius:12px'},[
+    q,cat,ichk('only ordered',fl.onlyOrdered,x=>{fl.onlyOrdered=x;renderIndiaTable();}),
+    ichk('air split only',fl.onlyAir,x=>{fl.onlyAir=x;renderIndiaTable();}),
+    ichk('flagged',fl.onlyFlag,x=>{fl.onlyFlag=x;renderIndiaTable();})]));
+
+  const cols=[['name','Product','l'],['current_moh','Cover','l'],
+    [null,projMonth(0)+'–'+projMonth(5)],['final_sea_qty','🚢 Sea'],['final_air_qty','✈️ Air']];
+  const headTr=el('tr');
+  cols.forEach(([k,label,cls])=>{const on=k&&IST.sort.k===k;
+    const t=el('th',{class:cls||''},[label+(on?(IST.sort.dir<0?' ▾':' ▴'):'')]);
+    if(k)t.onclick=()=>{IST.sort={k,dir:on?-IST.sort.dir:-1};renderIndiaTable();};headTr.appendChild(t);});
+  const tb=el('tbody');
+  rows.forEach(l=>tb.appendChild(iListRow(l)));
+  const left=el('div',{class:'ileft manifest'},[
+    el('div',{class:'itablewrap'},[el('table',{class:'itable'},[el('thead',null,[headTr]),tb])])]);
+  const right=el('div',{class:'iinspect boxpanel',id:'iinspect'},
+    [ sel?iInspect(sel):el('div',{class:'imeta'},['No item selected.']) ]);
+  wrap.appendChild(el('div',{class:'isplit'},[left,right]));
+
+  const pbtn=el('button',{class:'placebtn bigplace press',style:'margin-top:18px',onclick:()=>placeIndia(pbtn)},
+    ['📦  Place Order from India  ·  '+(IST._skus||0)+' SKUs']);
+  wrap.appendChild(pbtn);
+  v.appendChild(wrap);
+  const nl=document.querySelector('.ileft'); if(nl) nl.scrollTop=prevScroll;
+  if(IST.focus){const si=$('#iq');if(si){si.focus();const x=si.value;si.value='';si.value=x;}IST.focus=false;}
+}
+/* lightweight updates — no full view rebuild */
+function selectIndia(sku){
+  IST.selected=sku;
+  document.querySelectorAll('.itable tr.selrow').forEach(tr=>
+    tr.classList.toggle('sel', tr.getAttribute('data-sku')===sku));
+  refreshInspect();
+}
+function refreshInspect(){
+  const c=$('#iinspect'); if(!c) return;
+  const sel=(IST.data.lines||[]).find(l=>l.global_sku===IST.selected);
+  c.innerHTML=''; c.appendChild(sel?iInspect(sel):el('div',{style:'color:#9aa3b2'},['No item selected.']));
+}
+function refreshRow(l){
+  const tr=document.querySelector('.itable tr[data-sku="'+(window.CSS&&CSS.escape?CSS.escape(l.global_sku):l.global_sku)+'"]');
+  if(tr) tr.replaceWith(iListRow(l));
+}
+function refreshStats(){const s=$('#istat'); if(s) s.replaceWith(iStatRow(iFiltered()));}
+function statc(n,l){return el('div',{class:'statc'},[el('div',{class:'sn'},[String(n)]),el('div',{class:'sl'},[l])]);}
+function ichk(label,on,fn){const i=el('input',{type:'checkbox',onchange:e=>fn(e.target.checked)});if(on)i.checked=true;
+  return el('label',{style:'display:inline-flex;gap:6px;align-items:center;color:var(--ink);font-size:14px'},[i,label]);}
+
+function iListRow(l){
+  const seaOv=l.final_sea_qty!==l.suggested_sea_qty,airOv=l.final_air_qty!==l.suggested_air_qty;
+  const seld=l.global_sku===IST.selected;
+  return el('tr',{'data-sku':l.global_sku,class:'selrow'+(seld?' sel':''),
+    onclick:()=>selectIndia(l.global_sku)},[
+    el('td',{class:'l'},[el('div',{style:'display:flex;gap:10px;align-items:center'},[catIcon(l.category),
+      el('div',null,[el('div',{class:'pname'},[(l.name||l.global_sku).slice(0,40)]),
+        el('div',{class:'imeta'},[l.barcode||l.us_sku||l.global_sku,l.compliance_flag?' ⚑':''])])])]),
+    el('td',{class:'l'},[el('div',null,[coverText(l.current_moh)]),el('div',{class:'imeta'},['📦 '+f0(l.on_hand)])]),
+    el('td',null,[iBubbles(l)]),
+    el('td',{class:seaOv?'divg':''},[f0(l.final_sea_qty)]),
+    el('td',{class:airOv?'divg':''},[f0(l.final_air_qty)])]);
+}
+function iBubbles(l){const proj=(l.projected_moh_with_order||l.projected_moh||[]).slice(0,6),
+  target=l.target_moh||8,floor=3;const w=el('div',{class:'cstrip'});
+  proj.forEach((vv,i)=>{const lvl=vv>=target?'good':vv>=floor?'ok':vv>0?'thin':'out';
+    w.appendChild(el('span',{class:'cdot c-'+lvl+((i===3||i===5)?' big':''),
+      title:projMonth(i)+': '+vv+' mo'+(i===3?' (✈️ air lands)':i===5?' (🚢 sea lands)':'')}));});
+  return w;}
+function iremove(l){if(!confirm('Remove '+(l.name||l.global_sku)+' from the order?'))return;
+  api('/api/orders/'+IST.orderId+'/lines/'+encodeURIComponent(l.global_sku),{method:'DELETE'})
+    .then(()=>{IST.data.lines=IST.data.lines.filter(x=>x.global_sku!==l.global_sku);
+      if(IST.selected===l.global_sku)IST.selected=null;renderIndiaTable();});}
+function iflag(l){const val=prompt('Compliance flag (blank to clear):',l.compliance_flag||'');if(val===null)return;
+  api('/api/products/'+encodeURIComponent(l.global_sku),{method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({compliance_flag:val})}).then(()=>{l.compliance_flag=val;renderIndiaTable();});}
+
+/* big editable quantity stepper for the inspect panel (steps by case size) */
+function iStepper(l,field,label){
+  const step=l.case_size||1;
+  const inp=el('input',{type:'number',min:'0',value:l[field],class:'iqtyinp big'});
+  function commit(val){val=Math.max(0,parseInt(val||0,10));inp.value=val;
+    api('/api/orders/'+IST.orderId+'/lines/'+encodeURIComponent(l.global_sku),
+      {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:val})})
+      .then(()=>{l[field]=val;
+        IST._skus=(IST.data.lines||[]).filter(x=>x.final_sea_qty||x.final_air_qty).length;
+        refreshRow(l);
+        const pb=document.querySelector('.bigplace');if(pb)pb.textContent='📦  Place Order from India  ·  '+IST._skus+' SKUs';});}
+  inp.onchange=e=>commit(e.target.value);
+  return el('div',{class:'qtyblock'},[
+    el('div',{class:'imeta',style:'margin-bottom:5px'},[label]),
+    el('div',{style:'display:flex;gap:8px;align-items:center'},[
+      el('button',{class:'stepbtn',onclick:()=>commit((+inp.value||0)-step)},['−']),
+      inp,
+      el('button',{class:'stepbtn',onclick:()=>commit((+inp.value||0)+step)},['+'])])]);
+}
+
+function iInspect(l){
+  const kv=(k,val,c)=>el('div',{style:'display:flex;justify-content:space-between;gap:12px;padding:3px 0'},
+    [el('span',{class:'imeta'},[k]),el('span',{class:c||''},[val])]);
+  const card=(title,kids)=>el('div',{class:'dcard',style:'min-width:0'},[el('h4',null,[title]),...kids]);
+  const proj=(l.projected_moh_with_order||l.projected_moh||[]).slice(0,6),target=l.target_moh||8,floor=3;
+  const W=300,H=110,padB=20,padT=8,max=Math.max(target,floor,...proj,1)*1.15,bw=(W-16)/proj.length;
+  const y=val=>H-padB-(Math.max(0,val)/max)*(H-padB-padT);
+  const chart=svgEl('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',height:H},[
+    svgEl('line',{x1:8,x2:W-8,y1:y(target),y2:y(target),stroke:'#5fd08a','stroke-dasharray':'3 3','stroke-width':1}),
+    svgEl('line',{x1:8,x2:W-8,y1:y(floor),y2:y(floor),stroke:'#f0b34a','stroke-dasharray':'3 3','stroke-width':1}),
+    ...proj.flatMap((vv,i)=>{const x=8+i*bw+bw*0.2,w=bw*0.6,c=vv>=target?'#22c55e':vv>=floor?'#3b82f6':vv>0?'#f59e0b':'#ef4444';
+      return [svgEl('rect',{x,y:y(vv),width:w,height:H-padB-y(vv),rx:3,fill:c}),
+        svgEl('text',{x:x+w/2,y:H-6,'text-anchor':'middle','font-size':9,fill:'#aab3c1'},[projMonth(i)]),
+        (i===3||i===5)?svgEl('text',{x:x+w/2,y:y(vv)-3,'text-anchor':'middle','font-size':10,fill:'#e7eaf0'},[i===3?'✈️':'🚢']):null];})]);
+  const inc=l.incoming_units_by_month||[];
+  return el('div',{class:'inspbody'},[
+    // title
+    el('div',{style:'display:flex;gap:12px;align-items:center;margin-bottom:4px'},[catIcon(l.category),
+      el('div',{style:'min-width:0'},[el('div',{class:'pname',style:'font-size:20px;font-weight:800'},[l.name||l.global_sku]),
+        el('div',{class:'imeta'},[l.barcode||l.us_sku||l.global_sku])])]),
+    // editable quantities (prominent)
+    el('div',{class:'qtyrow'},[
+      iStepper(l,'final_sea_qty','🚢 Sea quantity'),
+      iStepper(l,'final_air_qty','✈️ Air quantity')]),
+    card('Demand',[kv('Forecast /mo',String(l.forecast_mean),l.diverges_from_baseline?'divg':''),
+      kv('Flat baseline /mo',String(l.baseline_monthly_sales),'imeta'),
+      kv('Confidence',l.forecast_confidence+' · '+(l.forecast_history_months||0)+' mo data'),
+      kv('Target cover',f0(l.target_moh)+' mo','imeta')]),
+    card('Projected coverage '+projMonth(0)+'–'+projMonth(5),[chart]),
+    card('Stock & in-transit',[kv('In stock',f0(l.on_hand)+' units'),
+      kv('Current cover',coverText(l.current_moh)),kv('Origin',l.origin||'—',(l.origin&&!/india/i.test(l.origin))?'divg':''),
+      ...(inc.some(x=>x)?inc.map((u,i)=>u?kv('Arriving '+projMonth(i),f0(u)+' units'):null):[el('div',{class:'imeta'},['none in transit'])])]),
+    card('Why air?',[el('div',{class:'imeta'},[l.air_split_reason||'—'])]),
+    el('div',{style:'display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:6px'},[
+      el('button',{class:'pill',style:'cursor:pointer',onclick:()=>iflag(l)},
+        [l.compliance_flag?'⚑ '+l.compliance_flag+' (edit)':'+ compliance flag']),
+      el('span',{style:'display:flex;gap:10px'},[odooLink(l),
+        el('button',{class:'pill',style:'cursor:pointer;color:#ff8a96',onclick:()=>iremove(l)},['✕ Remove'])])])]);
+}
+function odooLink(l){const base=(state.me&&state.me.odoo_url)||'';if(!base||!l.odoo_id)return el('span',null,['']);
+  return el('a',{class:'pill',href:base.replace(/\/$/,'')+'/web#model=product.product&id='+l.odoo_id+'&view_type=form',
+    target:'_blank',rel:'noopener'},['Open in Odoo ↗']);}
+function placeIndia(btn){
+  if(!confirm('Place this India order? Emails the configured India recipients.'))return;
+  btn.disabled=true;btn.textContent='Placing…';
+  api('/api/orders/'+IST.orderId+'/place',{method:'POST'})
+    .then(r=>{const lines=(r.emails||[]).map(e=>'• '+e.kind+': '+e.to+(e.sent?' ✓':' (logged)')).join('\n');
+      loadBadge();alert('India order placed.\n\n'+(lines||'No emails dispatched.'));navigate('/order/track');})
+    .catch(e=>{btn.disabled=false;btn.textContent='📦  Place Order from India';
+      alert('Failed: '+((e&&(e.detail||e.error))||'error'));});
+}
+
+/* ===================== USA VIEW (placeholder) ===================== */
+function renderUSA(){
+  state.view='usa';
+  const v=$('#view');v.innerHTML='';
+  v.appendChild(el('div',{class:'wrap view'},[
+    el('div',{class:'viewhead'},[backHome(),el('h2',null,['🇺🇸 USA Ordering'])]),
+    el('div',{class:'mat-white card',style:'text-align:center;padding:60px 20px'},[
+      el('div',{style:'font-size:46px'},['🚧']),
+      el('h3',{style:'margin:12px 0 6px'},['Coming soon']),
+      el('div',{class:'sub'},['US vendor ordering will live here. Placeholder for now.'])])]));
+}
+
+/* ===================== TRACK ORDERS (split-pane) ===================== */
+function renderTrack(){
+  state.view='track';
+  const v=$('#view');v.innerHTML='';
+  const wrap=el('div',{class:'wrap view'});
+  wrap.appendChild(el('div',{class:'viewhead'},[backHome(),el('h2',null,['📡 Track Orders'])]));
+  const pane=el('div',{class:'track'});
+  const left=el('div',{class:'track-list'},[el('div',{class:'sub'},['Loading…'])]);
+  const right=el('div',{class:'track-detail mat-white'},[el('div',{class:'track-empty'},['Select an order to see its timeline.'])]);
+  pane.appendChild(left);pane.appendChild(right);
+  wrap.appendChild(pane);v.appendChild(wrap);
+
+  Promise.all([api('/api/orders'),api('/api/events')]).then(([orders,ev])=>{
+    state.events=ev.events||[];state.unacked=ev.unacked||0;paintBadge();
+    const unreadByOrder={};state.events.forEach(e=>{if(!e.acked)unreadByOrder[e.order_id]=(unreadByOrder[e.order_id]||0)+1;});
+    left.innerHTML='';
+    if(!orders.length){left.appendChild(el('div',{class:'sub'},['No orders yet.']));return;}
+    orders.forEach(o=>{
+      const unread=unreadByOrder[o.id]||0;
+      const card=el('div',{class:'ocard',onclick:()=>selectOrder(o,card,right)},[
+        el('div',{style:'display:flex;justify-content:space-between;align-items:center'},[
+          el('strong',null,[o.name]), unread?el('span',{class:'reddot',title:unread+' new'}):null]),
+        el('div',{class:'sub',style:'margin-top:4px'},[o.lines+' lines · ',
+          el('span',{class:'chip '+(o.status==='placed'?'sea':'air')},[o.status])])]);
+      card.dataset.oid=o.id;
+      left.appendChild(card);
+    });
+  }).catch(()=>{left.innerHTML='';left.appendChild(el('div',{class:'err'},['Could not load orders.']));});
+}
+function selectOrder(o,card,right){
+  document.querySelectorAll('.ocard.sel').forEach(c=>c.classList.remove('sel'));
+  card.classList.add('sel');
+  right.innerHTML='';right.appendChild(el('div',{class:'sub'},['Loading order…']));
+  Promise.all([api('/api/orders/'+o.id+'/lines'),api('/api/orders/'+o.id+'/events')]).then(([d,events])=>{
+    right.innerHTML='';
+    right.appendChild(el('div',{style:'display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px'},[
+      el('h3',{style:'margin:0'},[o.name]),
+      el('span',{class:'pill'},[o.status])]));
+    const ordered=(d.lines||[]).filter(l=>l.final_sea_qty||l.final_air_qty);
+    right.appendChild(el('div',{class:'sub',style:'margin:6px 0 16px'},
+      [ordered.length+' items · '+f0(ordered.reduce((a,l)=>a+l.final_sea_qty+l.final_air_qty,0))+' units']));
+    // horizontal timeline
+    right.appendChild(el('div',{style:'font-weight:750;margin-bottom:2px'},['Timeline']));
+    const tl=el('div',{class:'timeline'});
+    if(!events.length)tl.appendChild(el('div',{class:'sub'},['No events yet.']));
+    events.forEach(e=>{
+      const unread=!e.acked;
+      tl.appendChild(el('div',{class:'tlnode'},[
+        el('div',{class:'tldot'+(unread?' unread':'')}),
+        el('div',{class:'tlcard mat-glass-med'},[
+          el('div',{class:'t'},[EVENT_ICON[e.type]||'•',' ',e.type.replace(/_/g,' ')]),
+          el('div',{class:'n'},[(e.note||'').slice(0,80)]),
+          el('div',{class:'tltime'},[fmtTime(e.at)+' · '+(e.actor||'')])])]));
+    });
+    right.appendChild(tl);
+    // scroll to newest (right) and clock the events
+    setTimeout(()=>{tl.scrollLeft=tl.scrollWidth;},30);
+    ackOrder(o.id).then(()=>{ // clear unread dots in this order's nodes + list
+      tl.querySelectorAll('.tldot.unread').forEach(d2=>d2.classList.remove('unread'));
+      const lc=document.querySelector('.ocard[data-oid="'+o.id+'"] .reddot');if(lc)lc.remove();});
+    // item list
+    right.appendChild(el('div',{style:'font-weight:750;margin:18px 0 6px'},['Items']));
+    const list=el('div',{class:'list',style:'max-height:32vh'});
+    ordered.forEach(l=>list.appendChild(el('div',{class:'li mat-glass-light'},[
+      el('div',null,[(l.name||l.global_sku).slice(0,52)]),
+      l.final_sea_qty?el('span',{class:'chip sea'},['🚢 '+f0(l.final_sea_qty)]):el('span',null,['']),
+      l.final_air_qty?el('span',{class:'chip air'},['✈️ '+f0(l.final_air_qty)]):el('span',null,[''])])));
+    if(!ordered.length)list.appendChild(el('div',{class:'sub'},['No ordered lines.']));
+    right.appendChild(list);
+  }).catch(()=>{right.innerHTML='';right.appendChild(el('div',{class:'err'},['Could not load order.']));});
+}
+const EVENT_ICON={created:'🆕',quantity_changed:'✏️',discontinued:'🗑️',substituted:'🔁',
+  method_changed:'🔀',split_created:'➗',availability_confirmed:'✅',placed:'📮',shipped:'🚚',arrived:'📦'};
+
+/* ===================== SETTINGS MENU ===================== */
+function toggleMenu(){
+  const ex=$('#menuPop');if(ex){ex.remove();return;}
+  const recips=el('input',{placeholder:'india@team.com, buyer@…',style:'width:100%'});
+  const cc=el('input',{placeholder:'cc@team.com',style:'width:100%'});
+  const msg=el('span',{class:'sub'});
+  api('/api/settings').then(s=>{recips.value=s.india_order_recipients||'';cc.value=s.email_cc||'';}).catch(()=>{});
+  const m=el('div',{class:'menu-pop mat-glass-light',id:'menuPop'},[
+    el('div',{class:'sub',style:'font-weight:700;margin:0 4px 8px'},['Theme']),
+    ...THEMES.map(([id,label,col])=>el('div',{class:'swatch'+(state.theme===id?' on':''),'data-theme':id,
+      onclick:()=>{applyTheme(id);document.querySelectorAll('#menuPop .swatch').forEach(s=>s.classList.toggle('on',s.getAttribute('data-theme')===id));}},
+      [el('span',{class:'dot',style:'background:'+col}),el('span',null,[label])])),
+    el('hr',{style:'border:none;border-top:1px solid var(--line);margin:12px 0'}),
+    el('div',{class:'sub',style:'font-weight:700;margin:0 4px 8px'},['Order emails']),
+    el('label',{class:'sub',style:'display:block;margin:0 4px 4px'},['India PO recipients']),recips,
+    el('label',{class:'sub',style:'display:block;margin:8px 4px 4px'},['CC']),cc,
+    el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin:10px 4px 0'},[
+      el('button',{class:'mat-candy-green press',style:'padding:7px 14px;border-radius:10px',onclick:()=>{
+        api('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({india_order_recipients:recips.value,email_cc:cc.value})})
+          .then(()=>{msg.textContent='Saved ✓';setTimeout(()=>msg.textContent='',1500);});}},['Save']),msg])]);
+  document.body.appendChild(m);
+  setTimeout(()=>document.addEventListener('click',function h(e){
+    if(!m.contains(e.target)&&e.target.id!=='gearBtn'){m.remove();document.removeEventListener('click',h);}},0));
+}
+
+/* arrow-key navigation through the India list */
+document.addEventListener('keydown',e=>{
+  if(state.view!=='india')return;
+  if(e.key!=='ArrowDown'&&e.key!=='ArrowUp')return;
+  const tg=(e.target.tagName||'').toLowerCase();
+  if(tg==='input'||tg==='select'||tg==='textarea')return;  // don't hijack typing/steppers
+  e.preventDefault();
+  const rows=iFiltered();if(!rows.length)return;
+  let idx=rows.findIndex(r=>r.global_sku===IST.selected);if(idx<0)idx=0;
+  idx=e.key==='ArrowDown'?Math.min(rows.length-1,idx+1):Math.max(0,idx-1);
+  selectIndia(rows[idx].global_sku);
+  const esc=window.CSS&&CSS.escape?CSS.escape(rows[idx].global_sku):rows[idx].global_sku;
+  const tr=document.querySelector('.itable tr[data-sku="'+esc+'"]');if(tr)tr.scrollIntoView({block:'nearest'});
+});
+
+boot();
+</script>
+</body>
+</html>

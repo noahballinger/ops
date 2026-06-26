@@ -1,0 +1,17 @@
+# Postgres for the back-office PC. Run:  docker compose up -d
+# Then set DATABASE_URL in .env to:
+#   postgresql+psycopg://isha:isha@localhost:5432/isha
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: isha
+      POSTGRES_PASSWORD: isha
+      POSTGRES_DB: isha
+    ports:
+      - "5432:5432"
+    volumes:
+      - isha_pgdata:/var/lib/postgresql/data
+volumes:
+  isha_pgdata:
