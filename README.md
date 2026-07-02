@@ -93,22 +93,32 @@ A pure, swappable module (`forecasting.py`):
 
 ---
 
-## Running it (one command)
+## Running it
 
+**macOS / Linux**
 ```bash
-./run.sh
+./run.sh      # create venv, install deps, serve at http://localhost:8000
+./test.sh     # run the test suite (separately; never touches Postgres)
 ```
 
-This creates a venv, installs deps, runs the test suite, and serves the app at
-**http://localhost:8000**. Open it, create an order by uploading the workbook,
-review/override, and export.
+**Windows**
+```bat
+install.bat   :: one-time setup: venv, deps, and a Desktop shortcut
+run.bat       :: serve at http://localhost:8000 (or use the Desktop shortcut)
+test.bat      :: run the test suite
+```
+`install.bat` checks for Python, builds the environment, installs dependencies,
+and places an "Isha Ordering" shortcut on the Desktop. `run.bat` / the shortcut
+launch the app and open the browser. All Windows scripts mirror the shell ones.
+
+The app runs on **Postgres** — start it first with `docker compose up -d`
+(Docker Desktop on Windows). Open **http://localhost:8000** and sign in.
 
 Manual equivalent:
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-pytest -q tests/
 uvicorn app.main:app --port 8000
 ```
 

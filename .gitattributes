@@ -1,0 +1,21 @@
+# Deterministic line endings so a Windows co-developer can't break the Unix
+# scripts (and vice-versa), regardless of each machine's git config.
+# Text is stored as LF in the repo; checked out per the rules below.
+* text=auto eol=lf
+
+# Shell scripts MUST stay LF — CRLF breaks the bash shebang on macOS/Linux.
+*.sh    text eol=lf
+
+# Windows scripts stay CRLF so they run correctly under cmd.exe / PowerShell.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf
+
+# Binary files: never apply EOL or diff munging.
+*.xlsx  binary
+*.db    binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.pdf   binary

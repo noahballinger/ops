@@ -17,6 +17,21 @@ from fastapi.responses import (HTMLResponse, PlainTextResponse, Response,
                                RedirectResponse)
 from sqlmodel import select, delete
 
+# Auto-load .env (project root or backend/) BEFORE importing app modules that
+# read the environment at import time — .db resolves DATABASE_URL immediately.
+# Existing env vars win, so a launcher that already exported them (run.sh) is
+# unaffected; a launcher that doesn't (run.bat on Windows) still works.
+def _load_dotenv():
+    for _envp in (os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+                  os.path.join(os.path.dirname(__file__), "..", ".env")):
+        if os.path.exists(_envp):
+            for _line in open(_envp):
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _v = _line.split("=", 1)
+                    os.environ.setdefault(_k.strip(), _v.split("#")[0].strip())
+_load_dotenv()
+
 from .config import load_config
 from .db import init_db, get_session
 from .datasources.file_import import load_from_workbook, load_from_exports
@@ -26,17 +41,6 @@ from .models import (Order, OrderLine, Product, InventorySnapshot, InTransit,
 from .service import create_order, update_override, export_rows
 from . import catalog
 from . import access
-
-# Auto-load .env (project root or backend/) so the web app has ODOO_* config
-# regardless of how it's launched. Existing env vars win.
-for _envp in (os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
-              os.path.join(os.path.dirname(__file__), "..", ".env")):
-    if os.path.exists(_envp):
-        for _line in open(_envp):
-            _line = _line.strip()
-            if _line and not _line.startswith("#") and "=" in _line:
-                _k, _v = _line.split("=", 1)
-                os.environ.setdefault(_k.strip(), _v.split("#")[0].strip())
 
 app = FastAPI(title="Isha Life USA Import Ordering Tool", version="1.0")
 CFG = load_config()

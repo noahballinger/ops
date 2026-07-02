@@ -10,15 +10,30 @@
 <style>
 /* ============================ THEME TOKENS ============================ */
 :root, html[data-theme="material"]{
-  --bg1:#eef1f5; --bg2:#f4f6f9; --bg3:#eef2f6;       /* neutral white-grey base */
-  --ink:#28303c; --muted:#737d8c; --line:#dde2ea;
-  --panel:#ffffff; --panel2:#f3f5f9;
-  --accent:#4a6d9c; --good:#4f8a63; --warn:#bf9341; --bad:#bd5a54;   /* muted semantics */
-  --sh-d:#d2d8e2; --sh-l:#ffffff;
+  --bg1:#f1ede3; --bg2:#f7f3ea; --bg3:#f1ece1;       /* warm Isha off-white base */
+  --ink:#2b2a27; --muted:#857c6e; --line:#e6dfd1;
+  --panel:#ffffff; --panel2:#f6f2ea;
+  --accent:#e8722c; --accent-2:#d6621d; --tint:#fff3ea;   /* orange primary accent */
+  --good:#4f8a63; --warn:#bf9341; --bad:#bd5a54;
+  /* brand orange scale — use sparingly (gold → maroon) */
+  --brand:#e8722c; --brand-gold:#e0a23c; --brand-red:#c8461f; --brand-brown:#8f3a24;
+  --sh-d:#e2dccf; --sh-l:#ffffff;
+}
+html[data-theme="blue"]{
+  --bg1:#eef1f6; --bg2:#f5f7fb; --bg3:#edf1f7;       /* cool light base */
+  --ink:#232a33; --muted:#6f7986; --line:#dde3ec;
+  --panel:#ffffff; --panel2:#f2f5fa;
+  --accent:#1667c8; --accent-2:#0f4fa0; --tint:#eef4fc;   /* blue primary accent */
+  --good:#4f8a63; --warn:#bf9341; --bad:#bd5a54;
+  /* brand blue scale — use sparingly (sky → navy), with brand green */
+  --brand:#1667c8; --brand-gold:#2f80d6; --brand-red:#0f4fa0; --brand-brown:#1e7e7e;
+  --sh-d:#d6ddea; --sh-l:#ffffff;
 }
 html[data-theme="dark"]{
   --bg1:#0f1115; --bg2:#11151c; --bg3:#0f1714; --ink:#e7eaf0; --muted:#9aa3b2;
-  --line:#2a2f3a; --panel:#181b22; --panel2:#1f232c; --accent:#5b8cff;
+  --line:#2a2f3a; --panel:#181b22; --panel2:#1f232c;
+  --accent:#f2853b; --accent-2:#d6621d; --tint:rgba(242,133,59,.14);
+  --brand:#f2853b; --brand-gold:#e0a23c; --brand-red:#d1552a; --brand-brown:#a4553a;
   --good:#22c55e; --warn:#f59e0b; --bad:#ef4444; --sh-d:#0b0d11; --sh-l:#252b36;
 }
 *{box-sizing:border-box}
@@ -65,7 +80,7 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
   box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 30px -18px rgba(0,0,0,.6);
   text-shadow:0 1px 1px rgba(0,0,0,.4);
 }
-.mat-white{background:linear-gradient(180deg,#ffffff,#f5f7fb);border:1px solid var(--line);
+.mat-white{background:linear-gradient(180deg,#ffffff,#faf6ef);border:1px solid var(--line);
   box-shadow:0 6px 16px -12px rgba(40,55,80,.35)}
 .mat-glass-light,.mat-glass-med,.mat-glass-dark{backdrop-filter:blur(12px) saturate(1.4);
   border-radius:inherit}
@@ -203,7 +218,7 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
 .manifest .itable tr.selrow:nth-child(odd) td{background:#ffffff}
 .manifest .itable tr.selrow:nth-child(even) td{background:#fafbfd}
 .manifest .itable tr.selrow:hover td{background:#f3f6fb}
-.manifest .itable tr.selrow.sel td{background:#eef3fb;border-top:1px solid var(--accent);border-bottom:1px solid var(--accent)}
+.manifest .itable tr.selrow.sel td{background:var(--tint);border-top:1px solid var(--accent);border-bottom:1px solid var(--accent)}
 .manifest .itable tr.selrow.sel td:first-child{border-left:1px solid var(--accent);border-radius:8px 0 0 8px}
 .manifest .itable tr.selrow.sel td:last-child{border-right:1px solid var(--accent);border-radius:0 8px 8px 0}
 .manifest .pname{color:#222a36;font-weight:600}
@@ -255,9 +270,9 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
 .tlcard .t{color:#2b3440} .tlcard .n{color:#8a93a2}
 .li.mat-glass-light,.li.mat-glass-med{background:#fbfcfe!important;border:1px solid #ebeef3!important;
   backdrop-filter:none!important;color:#2b3440}
-.btn-primary{background:linear-gradient(180deg,#3a434f,#2b333d);color:#fff;border:none;border-radius:12px;
-  font-weight:600;box-shadow:0 8px 18px -10px rgba(25,32,45,.5)}
-.btn-primary:hover{background:linear-gradient(180deg,#434d5b,#323a45)}
+.btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border:none;
+  border-radius:12px;font-weight:600;box-shadow:0 8px 18px -10px rgba(0,0,0,.35)}
+.btn-primary:hover{filter:brightness(1.06)}
 /* cardboard */
 .mat-cardboard{position:relative;
   background:
@@ -338,6 +353,20 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
   box-shadow:inset 0 2px 3px rgba(255,255,255,.5), 0 6px 14px -4px rgba(200,20,45,.8);
   animation:badgePop .3s ease}
 @keyframes badgePop{from{transform:scale(.4)}to{transform:scale(1)}}
+
+/* ---------- Ordering widget (flat list of options) ---------- */
+/* .oflat uses the global --brand (orange), so it tracks the theme */
+.oflat .wtitle{margin-bottom:12px}
+.oflat-stack{display:flex;flex-direction:column;gap:10px;margin:auto 0}
+.oflat-btn{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border-radius:14px;
+  font-size:15px;font-weight:700;cursor:pointer;text-align:left;color:#2a2f36;
+  border:1px solid var(--line);background:#fff;transition:border-color .14s ease,background .14s ease,transform .14s ease}
+.oflat-btn:hover{border-color:var(--brand);background:var(--tint);transform:translateY(-1px)}
+.oflat-ic{display:inline-flex;flex:none;color:var(--brand)}
+.oflat-ic .ic{width:22px;height:22px}
+.oflat-lbl{flex:1;min-width:0}
+html[data-theme="dark"] .oflat-btn{background:rgba(255,255,255,.04);color:#e8ecf2}
+html[data-theme="dark"] .oflat-btn:hover{background:rgba(232,114,44,.14);border-color:var(--brand)}
 
 /* ---------- Items Reorder widget (square, sober) ---------- */
 .wreorder{cursor:pointer;justify-content:space-between;transition:transform .15s ease}
@@ -526,7 +555,7 @@ function catIcon(category){const clean=cleanCat(category);let nm='box';
 const state={me:null,sync:{},unacked:0,view:'login'};
 
 /* ===================== themes ===================== */
-const THEMES=[['material','Material Light','#3b6ef0'],['dark','Dark','#1f232c']];
+const THEMES=[['material','Isha Light','#e8722c'],['blue','Isha Blue','#1667c8'],['dark','Dark','#1f232c']];
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);
   try{localStorage.setItem('isha_theme',t)}catch(e){}state.theme=t;}
 function currentTheme(){try{return localStorage.getItem('isha_theme')||'material'}catch(e){return'material'}}
@@ -709,37 +738,25 @@ function renderDashboard(){
   paintBadge();
 }
 
-/* ---- Ordering widget (the morphing box) ---- */
+/* ---- Ordering widget (flat: options shown from the start) ---- */
 function wOrdering(w){
-  const box=el('div',{class:'obox','data-state':'box'});
-  box.appendChild(el('div',{class:'badge'},['0']));
-  const inner=el('div',{class:'obox-inner'});
-  // buttons underneath (paper / light cardboard)
-  const mk=(cls,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},[label]);
-  const mki=(cls,ic,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},
-    [icon(ic),el('span',null,[label])]);
+  const body=el('div',{class:'wbody mat-white oflat'});
+  body.appendChild(el('div',{class:'badge'},['0']));
+  body.appendChild(el('div',{class:'wtitle'},['Order']));
   // Buttons = the lists THIS user may order from (server-enforced), + Track.
-  const SLUG_ICON={india:'india',usa:'flagUS'},SLUG_MAT={india:'mat-kraft',usa:'mat-cardstock'};
+  const SLUG_ICON={india:'india',usa:'flagUS'};
   const lists=(state.me&&state.me.lists)||[];
-  const btns=lists.map(L=>mki(SLUG_MAT[L.slug]||'mat-cardstock',SLUG_ICON[L.slug]||'box',
-    L.label.replace(/ Reorder List$/,''),L.order_path));
-  if(!btns.length)
-    btns.push(el('button',{class:'mat-cardstock',style:'opacity:.6',disabled:'',
-      onclick:e=>e.stopPropagation()},['No lists assigned']));
-  btns.push(mki('mat-recycled','track','Track Orders','/order/track'));
-  const menu=el('div',{class:'menu'},btns);
-  menu.style.gridTemplateRows=`repeat(${btns.length},1fr)`;
-  inner.appendChild(menu);
-  // the two cardboard halves that split apart
-  inner.appendChild(el('div',{class:'door dl mat-cardboard'}));
-  inner.appendChild(el('div',{class:'door dr mat-cardboard'}));
-  // centre tape + shipping label + hint
-  inner.appendChild(el('div',{class:'tape-v'}));
-  inner.appendChild(el('div',{class:'label'},[el('div',{class:'big'},['ORDERS']),el('div',{class:'barcode'})]));
-  inner.appendChild(el('div',{class:'hint'},['tap to open']));
-  box.appendChild(inner);
-  box.addEventListener('click',()=>box.setAttribute('data-state',box.getAttribute('data-state')==='open'?'box':'open'));
-  w.appendChild(box);
+  const mk=(ic,label,path,cls)=>el('button',{class:'oflat-btn press'+(cls?(' '+cls):''),
+    onclick:()=>navigate(path)},
+    [el('span',{class:'oflat-ic'},[icon(ic)]),el('span',{class:'oflat-lbl'},[label])]);
+  const stack=el('div',{class:'oflat-stack'});
+  lists.forEach(L=>stack.appendChild(
+    mk(SLUG_ICON[L.slug]||'box',L.label.replace(/ Reorder List$/,''),L.order_path)));
+  if(!lists.length)
+    stack.appendChild(el('div',{class:'sub',style:'padding:10px 4px'},['No lists assigned yet.']));
+  stack.appendChild(mk('track','Track Orders','/order/track','oflat-track'));
+  body.appendChild(stack);
+  w.appendChild(body);
 }
 /* ---- Items Reorder widget (square, sober) ---- */
 function wReorder(w){
