@@ -127,6 +127,47 @@ Seed/inspect from the workbook on the command line:
 python scripts/seed_from_workbook.py "/path/to/Copy of USA INV CHK.xlsx"
 ```
 
+### Developing on Windows
+
+Two supported paths. **WSL2 is recommended** — it gives full parity with the
+macOS/Linux developers (same `run.sh`, same bash, no line-ending or exec-bit
+issues), and Docker Desktop integrates with it directly. Native Windows with
+the `.bat` launchers also works fine; use it if you'd rather not run WSL.
+
+**Option A — WSL2 (recommended, Unix parity)**
+
+1. Install once (in an admin PowerShell), then reboot:
+   ```powershell
+   wsl --install
+   ```
+   This installs Ubuntu. Set a username/password when it first launches.
+2. Install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+   and enable **Settings → Resources → WSL integration** for your Ubuntu distro.
+3. **Clone the repo _inside_ the Linux filesystem** (e.g. `~/projects`), **not**
+   under `/mnt/c/...`. Working in the Linux home is far faster and avoids
+   Windows↔Linux permission quirks:
+   ```bash
+   cd ~ && mkdir -p projects && cd projects
+   git clone <repo-url> && cd "International Ordering Webapp"
+   ```
+4. From here it's identical to macOS/Linux:
+   ```bash
+   docker compose up -d      # Postgres + Metabase
+   ./run.sh                  # serve at http://localhost:8000
+   ./test.sh                 # tests
+   ```
+   Open **http://localhost:8000** in your normal Windows browser — `localhost`
+   is shared between Windows and WSL2.
+5. Use VS Code with the **WSL** extension (`code .` from the WSL shell) so the
+   editor runs against the Linux environment.
+
+**Option B — native Windows**
+
+Use `install.bat` → `run.bat` / `test.bat` as described above, with Docker
+Desktop providing Postgres/Metabase. The `.gitattributes` in the repo keeps
+line endings correct (LF for `*.sh`, CRLF for `*.bat`) regardless of your git
+config, so commits from Windows won't break the Unix scripts.
+
 ### Reporting with Metabase Open Source
 
 Metabase runs in development via Docker Compose:
