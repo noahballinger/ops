@@ -15,13 +15,16 @@ from .models import MessageLog
 
 class EmailProvider(Protocol):
     name: str
-    def send(self, session, to: str, subject: str, html: str, kind: str = "") -> dict: ...
+    def send(self, session, to: str, subject: str, html: str, kind: str = "",
+             cc: str = "") -> dict: ...
 
 
 class StubEmailProvider:
     name = "stub"
-    def send(self, session, to, subject, html, kind=""):
-        log = MessageLog(provider="email-stub", to_number=to, body=f"{subject}\n\n{html}",
+    def send(self, session, to, subject, html, kind="", cc=""):
+        log = MessageLog(provider="email-stub",
+                         to_number=to + (f" cc:{cc}" if cc else ""),
+                         body=f"{subject}\n\n{html}",
                          kind=kind or "email", status="logged")
         session.add(log); session.commit()
         return {"sent": False, "provider": self.name, "logged_id": log.id}
@@ -31,15 +34,19 @@ class GmailProvider:
     name = "gmail"
     def __init__(self, creds):
         self._creds = creds
-    def send(self, session, to, subject, html, kind=""):
+    def send(self, session, to, subject, html, kind="", cc=""):
         from googleapiclient.discovery import build
         svc = build("gmail", "v1", credentials=self._creds, cache_discovery=False)
         msg = MIMEText(html, "html")
         msg["to"] = to; msg["subject"] = subject
+        if cc:
+            msg["cc"] = cc
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         res = svc.users().messages().send(userId="me", body={"raw": raw}).execute()
-        session.add(MessageLog(provider="gmail", to_number=to, kind=kind or "email",
-                               body=subject, status="sent")); session.commit()
+        session.add(MessageLog(provider="gmail",
+                               to_number=to + (f" cc:{cc}" if cc else ""),
+                               kind=kind or "email", body=subject, status="sent"))
+        session.commit()
         return {"sent": True, "provider": self.name, "message_id": res.get("id")}
 
 
@@ -81,6 +88,20 @@ def compose_vendor_email(order_name: str, vendor_name: str, rows: list) -> tuple
             f"<th style='text-align:left;padding:4px 10px;border-bottom:2px solid #333'>Qty</th></tr>"
             f"{trs}</table><p>Total units: {total}.</p>"
             f"<p>Thank you.</p>")
+    return subject, html
+
+
+def compose_new_user_email(email: str, name: str, manage_url: str = "") -> tuple[str, str]:
+    """Notify coordinators that a new user signed in and needs list access."""
+    subject = f"Isha Ordering — new user awaiting access: {email}"
+    who = f"{name} ({email})" if name else email
+    link = (f"<p><a href='{manage_url}'>Open Users &amp; Access</a> to grant lists.</p>"
+            if manage_url else "<p>Open <b>Users &amp; Access</b> to grant lists.</p>")
+    html = (f"<p><b>{who}</b> just signed in to the Isha Life Ordering tool and "
+            f"currently has no list access.</p>"
+            f"<p>They'll see a waiting screen until a coordinator assigns at least "
+            f"one reorder list.</p>{link}"
+            f"<p style='color:#888;font-size:12px'>Sent automatically by the Ordering tool.</p>")
     return subject, html
 
 

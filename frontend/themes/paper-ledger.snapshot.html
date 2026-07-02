@@ -10,7 +10,7 @@
 <style>
 /* ============================ THEME TOKENS ============================ */
 :root, html[data-theme="material"]{
-  --bg1:#eef1f5; --bg2:#f4f6f9; --bg3:#eef2f6;       /* neutral white-grey base */
+  --bg1:#eef1f5; --bg2:#f1eef6; --bg3:#edf3ee;       /* calmer, desaturated base */
   --ink:#28303c; --muted:#737d8c; --line:#dde2ea;
   --panel:#ffffff; --panel2:#f3f5f9;
   --accent:#4a6d9c; --good:#4f8a63; --warn:#bf9341; --bad:#bd5a54;   /* muted semantics */
@@ -137,11 +137,14 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
 .cf-high{background:rgba(34,197,94,.25);color:#9ff0bf} .cf-medium{background:rgba(245,158,11,.25);color:#ffd79a}
 .cf-low{background:rgba(255,255,255,.12);color:#cdd6e2}
 .cstrip{display:flex;gap:6px;align-items:center;flex:none}
-/* clean flat status dots */
-.cdot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.08)}
-.cdot.big{width:18px;height:18px;box-shadow:0 0 0 2px rgba(0,0,0,.04)}
-.cdot.c-good{background:#5ba36e} .cdot.c-ok{background:#6f8fc4}
-.cdot.c-thin{background:#d2a64e} .cdot.c-out{background:#cf6a62}
+/* colored-in-pencil look: muted fill + diagonal pencil-stroke texture */
+.cdot{position:relative;width:17px;height:17px;border-radius:50%;overflow:hidden;
+  border:1px solid rgba(0,0,0,.22)}
+.cdot::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(52deg, rgba(255,255,255,.30) 0 1.2px, transparent 1.2px 3.4px)}
+.cdot.big{width:22px;height:22px;border-width:1.5px}
+.cdot.c-good{background:#6f9a76} .cdot.c-ok{background:#6f87a6}
+.cdot.c-thin{background:#bca067} .cdot.c-out{background:#b87069}
 /* India full review table (dark slate context) */
 .cat-ic{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;
   font-size:19px;flex:none;background:linear-gradient(180deg,#ffffff,#f1f3f7);border:1px solid rgba(0,0,0,.08)}
@@ -188,76 +191,62 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
 .india.ilock{height:calc(100vh - 66px);display:flex;flex-direction:column;overflow:hidden}
 .india.ilock .isplit{flex:1;min-height:0;height:auto}
 .india.ilock .bigplace{margin-top:14px;flex:none}
-.placebtn{background:linear-gradient(180deg,#3a434f,#2b333d);color:#fff;border:none;border-radius:12px;
-  font-weight:600;letter-spacing:.3px;box-shadow:0 8px 18px -10px rgba(25,32,45,.55)}
-.placebtn:hover{background:linear-gradient(180deg,#434d5b,#323a45)}
+.placebtn{background:linear-gradient(180deg,#5f9070,#4d855f);color:#fff;border:none;border-radius:13px;
+  font-weight:700;letter-spacing:.3px;box-shadow:0 8px 18px -10px rgba(50,90,65,.55)}
+.placebtn:hover{background:linear-gradient(180deg,#67996f,#52905f)}
 .placebtn:active{transform:translateY(2px)}
 
-/* ===== Shades-of-white, refined ===== */
-/* LEFT — clean white list */
-.manifest{color:#2b3440;border:1px solid #e7eaef;border-radius:12px;padding:6px;background:#ffffff}
-.manifest .itable th{background:#f6f8fb;color:#737d8c;border-bottom:1px solid #e7eaef;
-  font-size:11.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
-.manifest .itable,.manifest .itable td,.manifest .itable div{color:#2b3440}
-.manifest .itable td{border-bottom:1px solid #f1f3f7}
-.manifest .itable tr.selrow:nth-child(odd) td{background:#ffffff}
-.manifest .itable tr.selrow:nth-child(even) td{background:#fafbfd}
-.manifest .itable tr.selrow:hover td{background:#f3f6fb}
-.manifest .itable tr.selrow.sel td{background:#eef3fb;border-top:1px solid var(--accent);border-bottom:1px solid var(--accent)}
-.manifest .itable tr.selrow.sel td:first-child{border-left:1px solid var(--accent);border-radius:8px 0 0 8px}
-.manifest .itable tr.selrow.sel td:last-child{border-right:1px solid var(--accent);border-radius:0 8px 8px 0}
-.manifest .pname{color:#222a36;font-weight:600}
-.manifest .imeta{color:#8a93a2}
-.manifest .cat-ic{background:#f5f7fa;border:1px solid #e3e7ee}
-.manifest .divg{color:#a87a2c;font-weight:600}
-.manifest .cf-low{background:#eef1f5;color:#737d8c}
-.manifest .cf-medium{background:#f3ead7;color:#9a7a2e}
-.manifest .cf-high{background:#e7f0e8;color:#4f7a52}
+/* LEFT — light ledger-green paper manifest (alternating rows, faint rules) */
+.manifest{color:#37433a;border:1px solid #dde2d4;border-left:5px solid #97aa90;border-radius:10px;padding:6px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(120,160,110,.07) 27px 28px),
+    linear-gradient(180deg,#fbfdf6,#f3f8ea)}
+.manifest .itable th{background:#eaf2dc;color:#5f7a48;border-bottom:2px solid #cfe0b3;font-size:13px}
+.manifest .itable,.manifest .itable td,.manifest .itable div{color:#33403a}  /* force dark ink on paper */
+.manifest .itable td{border-bottom:1px solid transparent}            /* rules come from the bg */
+.manifest .itable tr.selrow td{background:transparent}
+.manifest .itable tr.selrow:nth-child(odd) td{background:rgba(120,160,110,.04)}
+.manifest .itable tr.selrow:nth-child(even) td{background:rgba(120,160,110,.10)}
+.manifest .itable tr.selrow:hover td{background:rgba(120,160,110,.16)}
+.manifest .itable tr.selrow.sel td{background:#ffffff;border-top:1.5px solid #7d9a74;border-bottom:1.5px solid #7d9a74}
+.manifest .itable tr.selrow.sel td:first-child{border-left:1.5px solid #7d9a74;border-radius:8px 0 0 8px}
+.manifest .itable tr.selrow.sel td:last-child{border-right:1.5px solid #7d9a74;border-radius:0 8px 8px 0}
+.manifest .pname{color:#2a352a;font-weight:600}
+.manifest .imeta{color:#6f7d61}
+.manifest .cat-ic{background:#fff;border:1px solid rgba(0,0,0,.12)}
+.manifest .divg{color:#9a6a14;font-weight:700}
+.manifest .cf-low{background:#dde7cc;color:#5a6a44}
+.manifest .cf-medium{background:#ecd79a;color:#7a5a16}
+.manifest .cf-high{background:#cbe6c2;color:#3c6a32}
 
-/* RIGHT — ivory inspect panel */
-.boxpanel{background:linear-gradient(180deg,#ffffff,#f7f9fc);color:#2b3440;
-  border:1px solid #e7eaef;border-radius:14px;padding:18px;position:relative;
-  box-shadow:0 10px 26px -18px rgba(40,55,80,.45)}
-.boxpanel .pname{color:#1f2733}
-.boxpanel .imeta{color:#8a93a2}
-.boxpanel .cat-ic{background:#f5f7fa;border:1px solid #e3e7ee}
-.boxpanel .dcard{background:#fbfcfe;border:1px solid #ebeef3;color:#2b3440}
-.boxpanel .dcard h4{color:#8a93a2}
-.boxpanel .divg{color:#a87a2c;font-weight:600}
-.boxpanel .qtyblock{background:#f7f9fc;border:1px solid #e7eaef;text-align:center}
-.boxpanel .iqtyinp.big{background:#ffffff;color:#1f2733;border:1px solid #d7dde6}
-.boxpanel .stepbtn{border-radius:50%;border:1px solid #d7dde6;color:#3a4350;
-  background:linear-gradient(180deg,#ffffff,#eef1f6)}
-.boxpanel .pill{background:#f3f5f9;color:#3a4350;border:1px solid #e3e7ee}
-.boxpanel .cf-low{background:#eef1f5;color:#737d8c}
-.boxpanel .cf-medium{background:#f3ead7;color:#9a7a2e}
-.boxpanel .cf-high{background:#e7f0e8;color:#4f7a52}
+/* RIGHT — warm cardboard box with box design cues */
+.boxpanel{background:linear-gradient(165deg,#f0a866,#e08c43);color:#5a3417;
+  border:1px solid #cf8038;border-radius:12px;padding:16px;position:relative}
+/* sticky packing-tape strip across the top */
+.boxtape{position:sticky;top:0;z-index:3;height:26px;margin:-16px -16px 14px;
+  display:flex;align-items:center;justify-content:center;letter-spacing:4px;
+  font-size:10.5px;font-weight:800;color:#86653a;
+  background:linear-gradient(180deg,#ecdcae,#d6c084);border-bottom:1px solid #b88a4f;
+  box-shadow:0 1px 2px rgba(90,60,20,.3)}
+.boxpanel .pname{color:#4a2a10}
+.boxpanel .imeta{color:#7c4a22}
+.boxpanel .cat-ic{background:linear-gradient(180deg,#fff,#f1ece2);border:1px solid rgba(0,0,0,.08)}
+/* inner cards look like box compartments (dashed fold edges) */
+.boxpanel .dcard{background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.22));
+  border:1px solid rgba(150,90,40,.28);color:#553016}
+.boxpanel .dcard h4{color:#9a5a22}
+.boxpanel .divg{color:#9a4a13;font-weight:700}
+.boxpanel .qtyblock{background:rgba(255,255,255,.36);border:1px solid rgba(150,90,40,.3);text-align:center}
+.boxpanel .iqtyinp.big{background:#fff7ec;color:#5a3417;border:1px solid #d6914f}
+.boxpanel .stepbtn{border-radius:50%;border:1px solid #c47e3a;color:#4a2a10;
+  background:repeating-linear-gradient(48deg, rgba(255,255,255,.28) 0 1.2px, transparent 1.2px 3.4px), #ec9d56}
+.boxpanel .pill{background:rgba(255,255,255,.34);color:#5a3417;border:1px solid rgba(150,90,40,.3)}
+.boxpanel .cf-low{background:rgba(255,255,255,.3);color:#5b3f1d}
+.boxpanel .cf-medium{background:#f0cf94;color:#6e4f12}
+.boxpanel .cf-high{background:#c2e0b3;color:#33602a}
 .press{transition:transform .08s ease, box-shadow .12s ease, filter .12s ease}
-.press:active{transform:translateY(1px) scale(.995);filter:brightness(.98)}
-
-/* ===== app-wide shades-of-white refinement ===== */
-.obox-inner{background:linear-gradient(180deg,#ffffff,#eef1f6)!important;
-  box-shadow:inset 0 8px 22px rgba(40,55,80,.10)!important}
-.obox .door{background:linear-gradient(180deg,#fbfcfe,#eef1f6);border:1px solid #e2e6ec}
-.obox .door.dl{box-shadow:inset 0 -3px 7px rgba(40,55,80,.06)}
-.obox .door.dr{box-shadow:inset 0 3px 7px rgba(40,55,80,.06)}
-.obox .tape-v{background:linear-gradient(180deg,rgba(210,217,228,0),#dbe1ea 25%,#cfd6e1 75%,rgba(210,217,228,0));box-shadow:none}
-.obox .label .big{color:#2b3440} .obox .hint{color:#8a93a2}
-.obox .menu button{background:linear-gradient(180deg,#ffffff,#f2f4f8);border:1px solid #e2e6ec;
-  color:#2b3440;box-shadow:0 4px 12px -8px rgba(40,55,80,.4)}
-.obox .menu button:hover{border-color:var(--accent)}
-.obox .menu .ic{color:#3a4350}
-.wbody.mat-slate{background:linear-gradient(180deg,#ffffff,#f5f7fb)!important;color:#2b3440!important;
-  border:1px solid #e7eaef!important;box-shadow:0 8px 20px -16px rgba(40,55,80,.4)!important;
-  background-image:none!important;text-shadow:none!important}
-.wtitle{opacity:.62}
-.tlcard{background:#fbfcfe!important;border:1px solid #ebeef3}
-.tlcard .t{color:#2b3440} .tlcard .n{color:#8a93a2}
-.li.mat-glass-light,.li.mat-glass-med{background:#fbfcfe!important;border:1px solid #ebeef3!important;
-  backdrop-filter:none!important;color:#2b3440}
-.btn-primary{background:linear-gradient(180deg,#3a434f,#2b333d);color:#fff;border:none;border-radius:12px;
-  font-weight:600;box-shadow:0 8px 18px -10px rgba(25,32,45,.5)}
-.btn-primary:hover{background:linear-gradient(180deg,#434d5b,#323a45)}
+.press:active{transform:translateY(2px) scale(.99);filter:brightness(.96);
+  box-shadow:inset 0 2px 5px rgba(90,65,35,.25)}
 /* cardboard */
 .mat-cardboard{position:relative;
   background:
@@ -338,73 +327,6 @@ header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;cursor:poi
   box-shadow:inset 0 2px 3px rgba(255,255,255,.5), 0 6px 14px -4px rgba(200,20,45,.8);
   animation:badgePop .3s ease}
 @keyframes badgePop{from{transform:scale(.4)}to{transform:scale(1)}}
-
-/* ---------- Items Reorder widget (square, sober) ---------- */
-.wreorder{cursor:pointer;justify-content:space-between;transition:transform .15s ease}
-.wreorder:hover{transform:translateY(-2px)}
-.wreorder .wreorder-ic{margin:auto 0;color:var(--ink, #3b4750);opacity:.78}
-.wreorder .wreorder-ic .ic{width:38px;height:38px}
-
-/* ---------- Available reorder lists grid ---------- */
-.listgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:18px}
-.listcard{border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:9px;
-  min-height:158px;transition:transform .15s ease, box-shadow .15s ease}
-.listcard.press{cursor:pointer}
-.listcard.press:hover{transform:translateY(-3px)}
-.listcard .lc-top{display:flex;align-items:center;justify-content:space-between}
-.listcard .lc-ic{display:inline-flex;color:var(--ink,#3b4750);opacity:.8}
-.listcard .lc-ic .ic{width:30px;height:30px}
-.listcard .lc-title{font-size:17px;font-weight:800;margin-top:2px}
-.listcard .lc-go{margin-top:auto;font-size:13px;font-weight:700;opacity:.72}
-.lc-tag{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;
-  padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.06);color:rgba(0,0,0,.5)}
-.lc-tag.live{background:rgba(46,160,110,.14);color:#2c8c63}
-html[data-theme="dark"] .lc-tag{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
-html[data-theme="dark"] .lc-tag.live{background:rgba(64,190,130,.18);color:#7fd6a8}
-.listcard.soon{opacity:.62}
-
-/* ---------- Master-list editor ---------- */
-.le-search{width:100%;padding:11px 14px;border-radius:12px;font-size:14px;
-  border:1px solid var(--line)}
-.le-results{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:42vh;overflow:auto}
-.le-result{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:11px;cursor:pointer;
-  border:1px solid var(--line)}
-.le-result:hover{background:rgba(0,0,0,.03)}
-.le-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.le-add{font-size:12px;font-weight:800;color:#2c8c63;flex:none}
-.le-addbox{margin-bottom:16px}
-.li.le-off{opacity:.5}
-.le-toggle{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
-  padding:5px 11px;border-radius:999px;border:1px solid var(--line);cursor:pointer;background:transparent}
-.li:not(.le-off) .le-toggle{background:rgba(46,160,110,.14);color:#2c8c63;border-color:transparent}
-.le-remove{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);cursor:pointer;
-  font-size:18px;line-height:1;background:transparent;color:rgba(0,0,0,.45)}
-.le-remove:hover{background:rgba(226,58,78,.12);color:#c8203d;border-color:transparent}
-html[data-theme="dark"] .le-result:hover{background:rgba(255,255,255,.05)}
-html[data-theme="dark"] .le-remove{color:rgba(255,255,255,.5)}
-
-/* ---------- Users & access table ---------- */
-.urow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px}
-.urow:not(.uhead):hover{background:rgba(0,0,0,.02)}
-.urow>div:first-child{flex:2;min-width:0}
-.urow>div:nth-child(2){width:118px;flex:none}
-.urow .ucol{width:56px;flex:none;text-align:center}
-.urow>div:last-child{width:42px;flex:none;text-align:right}
-.uhead{font-size:11px;text-transform:uppercase;letter-spacing:.5px;opacity:.6;font-weight:700;
-  border-bottom:1px solid var(--line);border-radius:0;margin-bottom:4px}
-.urow .ucol input{width:17px;height:17px;cursor:pointer}
-.urow select{padding:5px 8px;border-radius:9px;border:1px solid var(--line)}
-html[data-theme="dark"] .urow:not(.uhead):hover{background:rgba(255,255,255,.04)}
-
-/* ---------- Waiting screen · Snake ---------- */
-.snakewrap{position:relative;width:320px;max-width:100%;margin:0 auto}
-.snakecv{display:block;width:320px;height:320px;max-width:100%;border-radius:12px;
-  border:1px solid var(--line);background:rgba(0,0,0,.04);touch-action:none}
-.snakeover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  text-align:center;padding:14px;font-size:13px;font-weight:700;cursor:pointer;
-  border-radius:12px;background:rgba(0,0,0,.05)}
-html[data-theme="dark"] .snakecv{background:rgba(255,255,255,.05)}
-html[data-theme="dark"] .snakeover{background:rgba(0,0,0,.35)}
 
 /* ============================ VIEWS ============================ */
 .viewhead{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
@@ -507,8 +429,7 @@ const ICONS={
   india:_S+'<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c-4 4-4 12 0 16M12 4c4 4 4 12 0 16"/></svg>',
   track:_S+'<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>',
   ship:_S+'<path d="M4 14h16l-2 5H6Z"/><path d="M12 5v9M12 5l5 4h-5"/></svg>',
-  plane:_S+'<path d="M21 4 3 11l7 2 2 7 3-6Z"/><path d="M10 13 21 4"/></svg>',
-  list:_S+'<line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.6" cy="6" r="1.15" fill="currentColor" stroke="none"/><circle cx="4.6" cy="12" r="1.15" fill="currentColor" stroke="none"/><circle cx="4.6" cy="18" r="1.15" fill="currentColor" stroke="none"/></svg>'};
+  plane:_S+'<path d="M21 4 3 11l7 2 2 7 3-6Z"/><path d="M10 13 21 4"/></svg>'};
 function icon(name){const s=el('span',{class:'ic'});s.innerHTML=ICONS[name]||ICONS.box;return s;}
 /* category → line-icon disc (hover = name) */
 function cleanCat(c){return((c||'').split('/').pop()||'').trim()||'Uncategorised';}
@@ -535,13 +456,9 @@ function currentTheme(){try{return localStorage.getItem('isha_theme')||'material
 function navigate(p){const h='#'+p;if(location.hash===h)route();else location.hash=h;}
 function route(){
   if(!(state.me&&state.me.logged_in)){renderLogin();return;}
-  if(state.me.pending){renderWaiting();return;}   // no list access yet
   const h=location.hash.replace(/^#/,'')||'/';
   document.body.style.overflow=(h==='/order/india')?'hidden':'';   // lock page scroll on India
   if(h==='/'||h==='')renderDashboard();
-  else if(h==='/items/available-lists')renderAvailableLists();
-  else if(h.startsWith('/items/list/'))renderListEditor(decodeURIComponent(h.split('/').pop()));
-  else if(h==='/admin/users')renderUsersAdmin();
   else if(h==='/order/india')renderIndia();
   else if(h==='/order/usa')renderUSA();
   else if(h==='/order/track')renderTrack();
@@ -589,8 +506,8 @@ function ackOrder(orderId){return api('/api/events/ack',{method:'POST',headers:{
 function renderLogin(){
   state.view='login';paintAuth();
   const v=$('#view');v.innerHTML='';
-  const btn=el('button',{class:'btn-primary press',style:'width:100%;padding:15px;border-radius:14px;font-size:16px;display:flex;gap:10px;align-items:center;justify-content:center',
-    onclick:()=>location.href='/api/auth/google/login'},['Sign in with Google']);
+  const btn=el('button',{class:'mat-candy-blue press',style:'width:100%;padding:15px;border-radius:14px;font-size:16px;display:flex;gap:10px;align-items:center;justify-content:center',
+    onclick:()=>location.href='/api/auth/google/login'},['🔐 Sign in with Google']);
   const card=el('div',{class:'mat-white card',style:'max-width:420px;margin:14vh auto 0;text-align:center'},[
     el('div',{style:'font-size:46px;margin-bottom:6px'},['📦']),
     el('h2',{style:'margin:0 0 6px;font-size:21px'},['Isha Life · Ordering']),
@@ -599,87 +516,15 @@ function renderLogin(){
   v.appendChild(el('div',{class:'wrap view'},[card]));
 }
 
-/* ===================== WAITING (pending access) + SNAKE ===================== */
-let _snake=null;
-function cleanupSnake(){if(_snake){clearInterval(_snake.timer);clearInterval(_snake.poll);
-  document.removeEventListener('keydown',_snake.key);_snake=null;}}
-function renderWaiting(){
-  state.view='waiting';paintAuth();cleanupSnake();
-  const v=$('#view');v.innerHTML='';
-  const canvas=el('canvas',{width:'320',height:'320',class:'snakecv'});
-  const scoreEl=el('span',{class:'sub'},['Score: 0']);
-  const overlay=el('div',{class:'snakeover'},['Press an arrow key (or tap) to start']);
-  const note=el('div',{class:'sub',style:'margin-top:10px;min-height:18px'});
-  const card=el('div',{class:'mat-white card',style:'max-width:440px;margin:8vh auto 0;text-align:center'},[
-    el('div',{style:'font-size:42px'},['⏳']),
-    el('h2',{style:'margin:6px 0 4px'},['Almost there']),
-    el('div',{class:'sub'},['Please wait while a coordinator configures your account.']),
-    el('div',{style:'font-weight:800;margin:12px 0 14px'},['Play snake while you wait? 🐍']),
-    el('div',{class:'snakewrap'},[canvas,overlay]),
-    el('div',{style:'margin-top:8px'},[scoreEl]),
-    note,
-    el('div',{style:'margin-top:14px;display:flex;gap:10px;justify-content:center'},[
-      el('button',{class:'btn-primary press',style:'padding:9px 16px;border-radius:11px',onclick:recheck},['Check my access']),
-      el('button',{class:'mat-white press',style:'padding:9px 14px;border-radius:11px',onclick:()=>{
-        cleanupSnake();api('/api/logout',{method:'POST'}).then(()=>{state.me={logged_in:false};paintAuth();renderLogin();});}},['Sign out'])])]);
-  v.appendChild(el('div',{class:'wrap view'},[card]));
-  startSnake(canvas,scoreEl,overlay);
-  // auto-check every 20s: the moment a coordinator grants a list, move them in
-  _snake.poll=setInterval(()=>api('/api/me').then(m=>{
-    if(m.logged_in&&!m.pending){state.me=m;cleanupSnake();navigate('/');}}).catch(()=>{}),20000);
-  function recheck(){note.textContent='Checking…';
-    api('/api/me').then(m=>{state.me=m;
-      if(m.logged_in&&!m.pending){cleanupSnake();navigate('/');}
-      else note.textContent='Not yet — a coordinator still needs to assign you a list.';
-    }).catch(()=>{note.textContent='Could not check right now.';});}
-}
-function startSnake(canvas,scoreEl,overlay){
-  const ctx=canvas.getContext('2d'),N=20,CELL=canvas.width/N;
-  let snake,dir,nextDir,food,score,running=false;
-  function reset(){snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];dir={x:1,y:0};nextDir=dir;
-    score=0;scoreEl.textContent='Score: 0';placeFood();}
-  function placeFood(){do{food={x:(Math.random()*N)|0,y:(Math.random()*N)|0};}
-    while(snake.some(s=>s.x===food.x&&s.y===food.y));}
-  function step(){dir=nextDir;
-    const head={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
-    if(snake.some(s=>s.x===head.x&&s.y===head.y)){running=false;
-      overlay.style.display='';overlay.textContent='Game over · score '+score+' — tap to retry';return;}
-    snake.unshift(head);
-    if(head.x===food.x&&head.y===food.y){score++;scoreEl.textContent='Score: '+score;placeFood();}
-    else snake.pop();
-    draw();}
-  function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#e23a4e';ctx.fillRect(food.x*CELL+2,food.y*CELL+2,CELL-4,CELL-4);
-    const acc=(getComputedStyle(document.documentElement).getPropertyValue('--accent')||'#3b6ef0').trim();
-    ctx.fillStyle=acc;snake.forEach(s=>ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2));}
-  function setDir(x,y){if(snake.length>1&&x===-dir.x&&y===-dir.y)return;nextDir={x,y};}
-  function go(){if(!running){reset();running=true;}overlay.style.display='none';}
-  const key=e=>{if(state.view!=='waiting')return;
-    let used=true;const k=e.key;
-    if(k==='ArrowUp'||k==='w')setDir(0,-1);else if(k==='ArrowDown'||k==='s')setDir(0,1);
-    else if(k==='ArrowLeft'||k==='a')setDir(-1,0);else if(k==='ArrowRight'||k==='d')setDir(1,0);
-    else used=false;
-    if(used){e.preventDefault();if(!running)go();}};
-  document.addEventListener('keydown',key);
-  canvas.addEventListener('click',()=>{if(!running)go();});
-  reset();draw();
-  _snake={timer:setInterval(()=>{if(running)step();},110),key:key,poll:null};
-}
-
 /* ===================== DASHBOARD ===================== */
 const WIDGETS={
   ordering:{size:'w-2x2',render:wOrdering},
-  reorder:{size:'w-1x1',render:wReorder},   // square, 1/4 the Ordering box
   sync:{size:'w-2x1',render:wSync},
   activity:{size:'w-2x1',render:wActivity},
 };
-function dashLayout(){let l=null;
-  try{l=JSON.parse(localStorage.getItem('dash_layout'));}catch(e){}
-  if(!Array.isArray(l)||!l.length)l=['ordering','reorder','sync','activity'];
-  l=l.filter(id=>WIDGETS[id]);
-  // surface any newly added widget that isn't in the saved layout yet
-  Object.keys(WIDGETS).forEach(id=>{if(!l.includes(id))l.push(id);});
-  return l;}
+function dashLayout(){try{const l=JSON.parse(localStorage.getItem('dash_layout'));
+  if(Array.isArray(l)&&l.length)return l.filter(id=>WIDGETS[id]);}catch(e){}
+  return ['ordering','sync','activity'];}
 function saveLayout(l){try{localStorage.setItem('dash_layout',JSON.stringify(l))}catch(e){}}
 let _dragId=null;
 function renderDashboard(){
@@ -718,18 +563,10 @@ function wOrdering(w){
   const mk=(cls,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},[label]);
   const mki=(cls,ic,label,path)=>el('button',{class:cls+' press',onclick:e=>{e.stopPropagation();navigate(path);}},
     [icon(ic),el('span',null,[label])]);
-  // Buttons = the lists THIS user may order from (server-enforced), + Track.
-  const SLUG_ICON={india:'india',usa:'flagUS'},SLUG_MAT={india:'mat-kraft',usa:'mat-cardstock'};
-  const lists=(state.me&&state.me.lists)||[];
-  const btns=lists.map(L=>mki(SLUG_MAT[L.slug]||'mat-cardstock',SLUG_ICON[L.slug]||'box',
-    L.label.replace(/ Reorder List$/,''),L.order_path));
-  if(!btns.length)
-    btns.push(el('button',{class:'mat-cardstock',style:'opacity:.6',disabled:'',
-      onclick:e=>e.stopPropagation()},['No lists assigned']));
-  btns.push(mki('mat-recycled','track','Track Orders','/order/track'));
-  const menu=el('div',{class:'menu'},btns);
-  menu.style.gridTemplateRows=`repeat(${btns.length},1fr)`;
-  inner.appendChild(menu);
+  inner.appendChild(el('div',{class:'menu'},[
+    mki('mat-cardstock','flagUS','USA','/order/usa'),
+    mki('mat-kraft','india','India','/order/india'),
+    mki('mat-recycled','track','Track Orders','/order/track')]));
   // the two cardboard halves that split apart
   inner.appendChild(el('div',{class:'door dl mat-cardboard'}));
   inner.appendChild(el('div',{class:'door dr mat-cardboard'}));
@@ -741,23 +578,14 @@ function wOrdering(w){
   box.addEventListener('click',()=>box.setAttribute('data-state',box.getAttribute('data-state')==='open'?'box':'open'));
   w.appendChild(box);
 }
-/* ---- Items Reorder widget (square, sober) ---- */
-function wReorder(w){
-  const body=el('div',{class:'wbody mat-white wreorder press',
-    onclick:()=>navigate('/items/available-lists')});
-  body.appendChild(el('div',{class:'wtitle'},['Items Reorder']));
-  body.appendChild(el('div',{class:'wreorder-ic'},[icon('list')]));
-  body.appendChild(el('div',{class:'sub'},['Reorder lists']));
-  w.appendChild(body);
-}
 function wSync(w){
   const body=el('div',{class:'wbody mat-slate'});
   const sy=state.sync||{};
   body.appendChild(el('div',{class:'wtitle'},['Odoo sync']));
   body.appendChild(el('div',{style:'margin:auto 0;display:flex;flex-direction:column;gap:6px'},[
     el('div',{style:'font-size:26px;font-weight:800'},[sy.status==='ok'?f0(sy.cached_products)+' SKUs':(sy.status||'—')]),
-    el('div',{class:'sub'},[sy.status==='ok'?'synced '+ago(sy.age_seconds):'tap Sync in header'])]));
-  const b=el('button',{class:'btn-primary press',style:'padding:8px;border-radius:11px',onclick:syncNow},['↻ Sync now']);
+    el('div',{class:'sub',style:'color:#c7d0dc'},[sy.status==='ok'?'synced '+ago(sy.age_seconds):'tap Sync in header'])]));
+  const b=el('button',{class:'mat-silver press',style:'padding:8px;border-radius:11px',onclick:syncNow},['↻ Sync now']);
   body.appendChild(b);w.appendChild(body);
 }
 function wActivity(w){
@@ -767,257 +595,9 @@ function wActivity(w){
   body.appendChild(el('div',{style:'margin:auto 0'},[
     el('div',{style:'font-size:34px;font-weight:850;color:'+(n?'var(--bad)':'var(--good)')},[String(n)]),
     el('div',{class:'sub'},[n?'unacknowledged order updates':'all caught up 🎉'])]));
-  body.appendChild(el('button',{class:'btn-primary press',style:'padding:8px;border-radius:11px',
+  body.appendChild(el('button',{class:'mat-candy-blue press',style:'padding:8px;border-radius:11px',
     onclick:()=>navigate('/order/track')},['Open Track Orders']));
   w.appendChild(body);
-}
-
-/* ===================== REORDER LISTS (master lists) ===================== */
-// Each master list = the active OrderListItem rows for a channel. This page is
-// where products are added/removed; ordering is launched from inside a list.
-const LISTS={
-  india:{channel:'INDIA_IMPORT',label:'India Reorder List',icon:'india',
-         orderPath:'/order/india',desc:'Products imported from India.'},
-  usa:{channel:'US_VENDOR',label:'USA Reorder List',icon:'flagUS',
-       orderPath:'/order/usa',desc:'Products restocked from US vendors.'},
-};
-function listSlugByChannel(ch){return Object.keys(LISTS).find(k=>LISTS[k].channel===ch);}
-
-function renderAvailableLists(){
-  state.view='lists';
-  const v=$('#view');v.innerHTML='';
-  const admin=!!(state.me&&state.me.is_admin);
-  const myKeys=new Set(((state.me&&state.me.lists)||[]).map(l=>l.key));
-  const wrap=el('div',{class:'wrap view'});
-  wrap.appendChild(el('div',{class:'viewhead'},[
-    backHome(),
-    el('h2',null,['Reorder Lists']),
-    el('span',{class:'sub'},[admin?'Manage the products on each list, or open one to order.'
-                                   :'Open a list to place an order.'])]));
-
-  const grid=el('div',{class:'listgrid'});
-  // Admins manage every list; everyone else sees ONLY lists they can order from.
-  const visible=Object.keys(LISTS).filter(slug=>admin||myKeys.has(LISTS[slug].channel));
-  const card=(slug)=>{
-    const L=LISTS[slug];
-    return el('div',{class:'listcard mat-white press',
-      onclick:()=>navigate(admin?('/items/list/'+slug):L.orderPath)},[
-      el('div',{class:'lc-top'},[el('span',{class:'lc-ic'},[icon(L.icon)]),
-        el('span',{class:'lc-tag live'},[admin?'Master list':'Your list'])]),
-      el('div',{class:'lc-title'},[L.label]),
-      el('div',{class:'sub'},[L.desc]),
-      el('div',{class:'lc-go','data-count':slug},[admin?'Manage →':'Order →'])]);
-  };
-  const soonCard=(ic,title,desc)=>el('div',{class:'listcard soon mat-white'},[
-    el('div',{class:'lc-top'},[el('span',{class:'lc-ic'},[icon(ic)]),
-      el('span',{class:'lc-tag'},['Coming soon'])]),
-    el('div',{class:'lc-title'},[title]),
-    el('div',{class:'sub'},[desc])]);
-
-  visible.forEach(slug=>grid.appendChild(card(slug)));
-  if(admin){   // placeholders are an admin/planning concern
-    grid.appendChild(soonCard('track','Canada Reorder List','US → Canada transfers.'));
-    grid.appendChild(soonCard('list','Limited lists','Curated lists assigned to specific users (next).'));
-  }
-  if(!visible.length&&!admin)
-    grid.appendChild(el('div',{class:'card mat-white',style:'text-align:center'},
-      [el('div',{class:'sub'},['No lists assigned to you yet. A coordinator will grant access.'])]));
-  wrap.appendChild(grid);
-  v.appendChild(wrap);
-
-  // annotate cards with active item counts (admins only — needs the list API)
-  if(admin)api('/api/order-list').then(d=>{
-    const items=d.items||[];
-    visible.forEach(slug=>{
-      const n=items.filter(i=>i.channel===LISTS[slug].channel&&i.active).length;
-      const go=grid.querySelector(`[data-count="${slug}"]`);
-      if(go)go.textContent=`${n} product${n===1?'':'s'} · Manage →`;
-    });
-  }).catch(()=>{});
-}
-
-/* ---- Master-list editor: add / remove products on one channel ---- */
-function renderListEditor(slug){
-  const L=LISTS[slug];
-  if(!L){navigate('/items/available-lists');return;}
-  // Editing a master list is admin-only. Members go straight to ordering if
-  // they have access, otherwise back to their lists.
-  if(!(state.me&&state.me.is_admin)){
-    const can=((state.me&&state.me.lists)||[]).some(x=>x.key===L.channel);
-    navigate(can?L.orderPath:'/items/available-lists');return;
-  }
-  state.view='listedit';state.listSlug=slug;
-  const v=$('#view');v.innerHTML='';
-  const wrap=el('div',{class:'wrap view'});
-  wrap.appendChild(el('div',{class:'viewhead'},[
-    el('button',{class:'backbtn mat-white press',onclick:()=>navigate('/items/available-lists')},['← Reorder lists']),
-    el('span',{class:'lc-ic',style:'opacity:.8'},[icon(L.icon)]),
-    el('h2',null,[L.label]),
-    el('span',{class:'sub',id:'leCount'},['…']),
-    el('div',{style:'flex:1'}),
-    el('button',{class:'btn-primary press',onclick:()=>navigate(L.orderPath)},['Order from this list →'])]));
-
-  // add-product box
-  const search=el('input',{class:'mat-white le-search',type:'text',
-    placeholder:'Search the catalogue to add a product…'});
-  const results=el('div',{class:'le-results'});
-  const addbox=el('div',{class:'card mat-white le-addbox'},[
-    el('div',{class:'wtitle',style:'margin-bottom:8px'},['Add a product']),
-    search,results]);
-  wrap.appendChild(addbox);
-
-  // current items
-  const listCard=el('div',{class:'card mat-white'});
-  listCard.appendChild(el('div',{class:'wtitle',style:'margin-bottom:8px'},['On this list']));
-  const rows=el('div',{class:'list',id:'leList',style:'max-height:54vh'});
-  listCard.appendChild(rows);
-  wrap.appendChild(listCard);
-  v.appendChild(wrap);
-
-  let _t=null;
-  search.addEventListener('input',()=>{clearTimeout(_t);_t=setTimeout(()=>doSearch(),220);});
-  function doSearch(){
-    const q=search.value.trim();
-    results.innerHTML='';
-    if(!q){return;}
-    api(`/api/products?exclude_channel=${encodeURIComponent(L.channel)}&q=${encodeURIComponent(q)}&limit=40`)
-      .then(d=>{
-        results.innerHTML='';
-        (d.items||[]).forEach(p=>{
-          const r=el('div',{class:'le-result press',onclick:()=>addItem(p)},[
-            catIcon(p.category),
-            el('div',{style:'flex:1;min-width:0'},[
-              el('div',{class:'le-name'},[p.name||p.global_sku]),
-              el('div',{class:'imeta'},[cleanCat(p.category)+' · '+(p.us_sku||p.global_sku)])]),
-            el('span',{class:'le-add'},['+ Add'])]);
-          results.appendChild(r);
-        });
-        if(!(d.items||[]).length)results.appendChild(el('div',{class:'sub',style:'padding:8px'},['No matching products not already on the list.']));
-      }).catch(()=>{});
-  }
-  function addItem(p){
-    api('/api/order-list',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({global_sku:p.global_sku,channel:L.channel,active:true})})
-      .then(()=>{search.value='';results.innerHTML='';load();}).catch(()=>{});
-  }
-  function setActive(it,active){
-    api('/api/order-list',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({global_sku:it.global_sku,channel:L.channel,active:active})})
-      .then(load).catch(()=>{});
-  }
-  function removeItem(it){
-    api('/api/order-list/'+encodeURIComponent(it.global_sku),{method:'DELETE'})
-      .then(load).catch(()=>{});
-  }
-  function load(){
-    api('/api/order-list').then(d=>{
-      const items=(d.items||[]).filter(i=>i.channel===L.channel)
-        .sort((a,b)=>(a.name||a.global_sku).localeCompare(b.name||b.global_sku));
-      const active=items.filter(i=>i.active).length;
-      $('#leCount').textContent=`${active} active · ${items.length} total`;
-      rows.innerHTML='';
-      if(!items.length){rows.appendChild(el('div',{class:'sub',style:'padding:10px'},['No products yet — search above to add some.']));return;}
-      items.forEach(it=>{
-        const row=el('div',{class:'li mat-white'+(it.active?'':' le-off')},[
-          el('div',{style:'display:flex;align-items:center;gap:11px;min-width:0'},[
-            catIcon(it.category),
-            el('div',{style:'min-width:0'},[
-              el('div',{class:'le-name'},[it.name||it.global_sku]),
-              el('div',{class:'imeta'},[cleanCat(it.category)+' · '+(it.us_sku||it.global_sku)
-                +(it.vendor_name?(' · '+it.vendor_name):'')])])]),
-          el('button',{class:'le-toggle press',title:it.active?'Active — click to pause':'Paused — click to activate',
-            onclick:()=>setActive(it,!it.active)},[it.active?'Active':'Paused']),
-          el('button',{class:'le-remove press',title:'Remove from list',
-            onclick:()=>removeItem(it)},['×'])]);
-        rows.appendChild(row);
-      });
-    }).catch(()=>{});
-  }
-  load();
-}
-
-/* ===================== USERS & ACCESS (admin) ===================== */
-function renderUsersAdmin(){
-  if(!(state.me&&state.me.is_admin)){navigate('/');return;}
-  state.view='users';
-  const v=$('#view');v.innerHTML='';
-  const wrap=el('div',{class:'wrap view'});
-  wrap.appendChild(el('div',{class:'viewhead'},[
-    backHome(),
-    el('h2',null,['Users & Access']),
-    el('span',{class:'sub'},['Add people and choose which lists each can order from.'])]));
-
-  // add-user form
-  const fEmail=el('input',{class:'mat-white',type:'email',placeholder:'name@company.com',style:'flex:2;min-width:180px'});
-  const fName=el('input',{class:'mat-white',type:'text',placeholder:'Full name (optional)',style:'flex:2;min-width:140px'});
-  const fRole=el('select',{class:'mat-white',style:'flex:1'},[
-    el('option',{value:'member'},['Member']),el('option',{value:'admin'},['Admin'])]);
-  const fMsg=el('span',{class:'sub'});
-  const addBtn=el('button',{class:'btn-primary press',onclick:()=>{
-    const email=(fEmail.value||'').trim();
-    if(!email){fMsg.textContent='Email required';return;}
-    api('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,name:fName.value,role:fRole.value,active:true})})
-      .then(()=>{fEmail.value='';fName.value='';fMsg.textContent='Added ✓';
-        setTimeout(()=>fMsg.textContent='',1200);load();})
-      .catch(()=>{fMsg.textContent='Could not add';});}},['Add user']);
-  wrap.appendChild(el('div',{class:'card mat-white'},[
-    el('div',{class:'wtitle',style:'margin-bottom:8px'},['Add a user']),
-    el('div',{style:'display:flex;gap:10px;align-items:center;flex-wrap:wrap'},
-      [fEmail,fName,fRole,addBtn,fMsg])]));
-
-  const card=el('div',{class:'card mat-white'});
-  card.appendChild(el('div',{class:'wtitle',style:'margin-bottom:8px'},['People']));
-  const tbl=el('div',{id:'uTbl'});card.appendChild(tbl);
-  wrap.appendChild(card);
-  v.appendChild(wrap);
-
-  function load(){
-    api('/api/users').then(d=>{
-      const lists=d.lists||[],users=d.users||[];
-      tbl.innerHTML='';
-      // header row
-      tbl.appendChild(el('div',{class:'urow uhead'},[
-        el('div',null,['User']),
-        el('div',null,['Role']),
-        ...lists.map(L=>el('div',{class:'ucol',title:L.label},[L.slug.toUpperCase()])),
-        el('div',null,[''])]));
-      users.forEach(u=>{
-        const acc=new Set(u.access||[]);
-        const me=(state.me.login||'').toLowerCase()===u.email;
-        const roleSel=el('select',{class:'mat-white',onchange:()=>save(u,{role:roleSel.value})},[
-          el('option',{value:'member',...(u.role==='member'?{selected:''}:{})},['Member']),
-          el('option',{value:'admin',...(u.role==='admin'?{selected:''}:{})},['Admin'])]);
-        const checks=lists.map(L=>{
-          const isAdmin=u.role==='admin';
-          const cb=el('input',{type:'checkbox',...((acc.has(L.key)||isAdmin)?{checked:''}:{}),
-            ...(isAdmin?{disabled:''}:{}),
-            onchange:()=>{const keys=lists.filter(x=>x.key!==L.key&&acc.has(x.key)).map(x=>x.key);
-              if(cb.checked)keys.push(L.key);
-              api('/api/users/access',{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({email:u.email,list_keys:keys})}).then(load);}});
-          return el('div',{class:'ucol'},[cb]);
-        });
-        const del=el('button',{class:'le-remove press',title:me?"You can't delete yourself":'Delete user',
-          ...(me?{disabled:'',style:'opacity:.3'}:{}),
-          onclick:()=>{if(me)return;if(confirm('Delete '+u.email+'?'))
-            api('/api/users/'+encodeURIComponent(u.email),{method:'DELETE'}).then(load);}},['×']);
-        tbl.appendChild(el('div',{class:'urow'+(u.active?'':' le-off')},[
-          el('div',{style:'min-width:0'},[
-            el('div',{class:'le-name'},[u.name||u.email]),
-            el('div',{class:'imeta'},[u.email+(me?' · you':'')])]),
-          el('div',null,[roleSel]),
-          ...checks,
-          el('div',null,[del])]));
-      });
-      if(!users.length)tbl.appendChild(el('div',{class:'sub',style:'padding:10px'},['No users yet.']));
-    }).catch(()=>{tbl.innerHTML='';tbl.appendChild(el('div',{class:'sub',style:'padding:10px'},['Admins only.']));});
-  }
-  function save(u,patch){
-    api('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email:u.email,name:u.name,role:u.role,active:u.active,...patch})}).then(load);
-  }
-  load();
 }
 
 /* ===================== INDIA VIEW ===================== */
@@ -1200,15 +780,19 @@ function iInspect(l){
   const proj=(l.projected_moh_with_order||l.projected_moh||[]).slice(0,6),target=l.target_moh||8,floor=3;
   const W=300,H=110,padB=20,padT=8,max=Math.max(target,floor,...proj,1)*1.15,bw=(W-16)/proj.length;
   const y=val=>H-padB-(Math.max(0,val)/max)*(H-padB-padT);
-  const PC={good:'#5ba36e',ok:'#6f8fc4',thin:'#d2a64e',out:'#cf6a62'};
+  const PC={good:'#6f9a76',ok:'#6f87a6',thin:'#bca067',out:'#b87069'};
+  const defs=svgEl('defs',null,[svgEl('pattern',
+    {id:'pncl',width:4,height:4,patternUnits:'userSpaceOnUse',patternTransform:'rotate(52)'},
+    [svgEl('line',{x1:1,y1:0,x2:1,y2:4,stroke:'rgba(255,255,255,.34)','stroke-width':1.3})])]);
   const bars=proj.flatMap((vv,i)=>{const x=8+i*bw+bw*0.2,w=bw*0.6,h2=H-padB-y(vv);
     const col=vv>=target?PC.good:vv>=floor?PC.ok:vv>0?PC.thin:PC.out;
-    return [svgEl('rect',{x,y:y(vv),width:w,height:h2,rx:3,fill:col}),
-      svgEl('text',{x:x+w/2,y:H-6,'text-anchor':'middle','font-size':9,fill:'#8a93a2'},[projMonth(i)]),
-      (i===3||i===5)?svgEl('text',{x:x+w/2,y:y(vv)-4,'text-anchor':'middle','font-size':8,fill:'#737d8c'},[i===3?'AIR':'SEA']):null];});
-  const chart=svgEl('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',height:H},[
-    svgEl('line',{x1:8,x2:W-8,y1:y(target),y2:y(target),stroke:'#5ba36e','stroke-dasharray':'3 3','stroke-width':1}),
-    svgEl('line',{x1:8,x2:W-8,y1:y(floor),y2:y(floor),stroke:'#d2a64e','stroke-dasharray':'3 3','stroke-width':1}),
+    return [svgEl('rect',{x,y:y(vv),width:w,height:h2,rx:3,fill:col,stroke:'rgba(0,0,0,.2)','stroke-width':1}),
+      svgEl('rect',{x,y:y(vv),width:w,height:h2,rx:3,fill:'url(#pncl)'}),
+      svgEl('text',{x:x+w/2,y:H-6,'text-anchor':'middle','font-size':9,fill:'#7c5d31'},[projMonth(i)]),
+      (i===3||i===5)?svgEl('text',{x:x+w/2,y:y(vv)-4,'text-anchor':'middle','font-size':8,fill:'#7c4a22'},[i===3?'AIR':'SEA']):null];});
+  const chart=svgEl('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',height:H},[defs,
+    svgEl('line',{x1:8,x2:W-8,y1:y(target),y2:y(target),stroke:'#3f8a55','stroke-dasharray':'3 3','stroke-width':1}),
+    svgEl('line',{x1:8,x2:W-8,y1:y(floor),y2:y(floor),stroke:'#c08a2e','stroke-dasharray':'3 3','stroke-width':1}),
     ...bars]);
   const inc=l.incoming_units_by_month||[];
   return el('div',{class:'inspbody'},[
@@ -1221,9 +805,7 @@ function iInspect(l){
       iStepper(l,'final_sea_qty','Sea quantity','ship'),
       iStepper(l,'final_air_qty','Air quantity','plane')]),
     card('Demand',[kv('Forecast /mo',String(l.forecast_mean),l.diverges_from_baseline?'divg':''),
-      kv('Sell-through',(l.sell_through!=null?Math.round(l.sell_through*100)+'%':'—')
-        +(l.units_sold!=null?' · '+f0(l.units_sold)+' sold':'')),
-      kv('Velocity basis',(l.months_active||0)+' in-stock mo','imeta'),
+      kv('Flat baseline /mo',String(l.baseline_monthly_sales),'imeta'),
       kv('Confidence',l.forecast_confidence+' · '+(l.forecast_history_months||0)+' mo data'),
       kv('Target cover',f0(l.target_moh)+' mo','imeta')]),
     card('Projected coverage '+projMonth(0)+'–'+projMonth(5),[chart]),
@@ -1353,17 +935,10 @@ function toggleMenu(){
     el('label',{class:'sub',style:'display:block;margin:0 4px 4px'},['India PO recipients']),recips,
     el('label',{class:'sub',style:'display:block;margin:8px 4px 4px'},['CC']),cc,
     el('div',{style:'display:flex;justify-content:space-between;align-items:center;margin:10px 4px 0'},[
-      el('button',{class:'btn-primary press',style:'padding:7px 14px;border-radius:10px',onclick:()=>{
+      el('button',{class:'mat-candy-green press',style:'padding:7px 14px;border-radius:10px',onclick:()=>{
         api('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({india_order_recipients:recips.value,email_cc:cc.value})})
           .then(()=>{msg.textContent='Saved ✓';setTimeout(()=>msg.textContent='',1500);});}},['Save']),msg])]);
-  if(state.me&&state.me.is_admin){
-    m.appendChild(el('hr',{style:'border:none;border-top:1px solid var(--line);margin:12px 0'}));
-    const adminIc=icon('list');adminIc.style.width='18px';adminIc.style.height='18px';
-    m.appendChild(el('div',{class:'swatch',style:'cursor:pointer',
-      onclick:()=>{m.remove();navigate('/admin/users');}},
-      [adminIc,el('span',null,['Manage users & access'])]));
-  }
   document.body.appendChild(m);
   setTimeout(()=>document.addEventListener('click',function h(e){
     if(!m.contains(e.target)&&e.target.id!=='gearBtn'){m.remove();document.removeEventListener('click',h);}},0));

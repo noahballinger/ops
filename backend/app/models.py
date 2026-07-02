@@ -58,6 +58,12 @@ class InventorySnapshot(SQLModel, table=True):
     #   [{"year":2025,"month":6,"units":120.0,"is_stockout":false}, ...]
     monthly_sales_series: list = Field(default_factory=list, sa_column=Column(JSON))
     avg_monthly_sales: float = 0.0
+    # Demand metrics persisted as flat columns so Metabase can chart them
+    # directly (rather than re-deriving from the JSON series). Sell-through =
+    # units_sold / (units_sold + on_hand); velocity basis = months_active.
+    units_sold: float = 0.0
+    months_active: int = 0
+    sell_through: float = 0.0
     source: str = "file_import"                        # odoo_live | file_import
     batch_id: str = Field(default="", index=True)      # groups one refresh
 
@@ -74,6 +80,7 @@ class DemandForecast(SQLModel, table=True):
     uncertainty_pct: float = 0.0
     diverges_from_baseline: bool = False
     notes: list = Field(default_factory=list, sa_column=Column(JSON))
+    batch_id: str = Field(default="", index=True)      # groups one refresh (for pruning)
 
 
 class InTransit(SQLModel, table=True):
@@ -227,6 +234,26 @@ class AppSetting(SQLModel, table=True):
     recipients for order placement."""
     key: str = Field(primary_key=True)
     value: str = Field(default="", sa_column=Column(Text))
+
+
+# --------------------------------------------------------------------------
+# Users & per-list access. Sign-in is Google; AppUser records who may use the
+# app and their role. ListAccess grants a user the right to ORDER FROM a list
+# (list_key is a channel like INDIA_IMPORT today, a limited-list id later).
+# Admins implicitly have access to every list.
+# --------------------------------------------------------------------------
+class AppUser(SQLModel, table=True):
+    email: str = Field(primary_key=True)          # lower-cased Google email
+    name: str = ""
+    role: str = "member"                          # admin | member
+    active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ListAccess(SQLModel, table=True):
+    email: str = Field(primary_key=True)
+    list_key: str = Field(primary_key=True)       # e.g. INDIA_IMPORT | US_VENDOR
+    granted_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class MessageLog(SQLModel, table=True):

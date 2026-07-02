@@ -25,6 +25,7 @@ from .models import (Order, OrderLine, Product, InventorySnapshot, InTransit,
                      ShipmentLeg, OrderLineEvent)
 from .service import create_order, update_override, export_rows
 from . import catalog
+from . import access
 
 # Auto-load .env (project root or backend/) so the web app has ODOO_* config
 # regardless of how it's launched. Existing env vars win.
@@ -72,6 +73,20 @@ def require_session(isha_session: Optional[str] = Cookie(default=None)) -> dict:
     if not s:
         raise HTTPException(401, "Not logged in. Sign in with your Odoo credentials.")
     return s
+
+
+def require_admin(sess: dict = Depends(require_session)) -> dict:
+    with get_session() as s:
+        if not access.is_admin(s, sess.get("login", "")):
+            raise HTTPException(403, "Admins only.")
+    return sess
+
+
+def require_list_access(sess: dict, list_key: str) -> None:
+    """Raise 403 unless the logged-in user may order from `list_key`."""
+    with get_session() as s:
+        if not access.can_order(s, sess.get("login", ""), list_key):
+            raise HTTPException(403, "You don't have access to this list.")
 
 
 # --------------------------------------------------------------------- UI
@@ -128,6 +143,21 @@ def google_callback(request: Request, code: str = "", state: str = ""):
     token = secrets.token_urlsafe(32)
     SESSIONS[token] = {"login": email, "name": claims.get("name", ""),
                        "google": True, "last": time.time()}
+    with get_session() as s:
+        existed = access.user_exists(s, email)
+        access.ensure_user(s, email, claims.get("name", ""))   # 1st user => admin
+        # Notify coordinators the first time a brand-new user lands with no access.
+        if (not existed) and access.is_pending(s, email):
+            try:
+                from .mailer import get_provider, compose_new_user_email
+                manage = str(request.base_url).rstrip("/") + "/#/admin/users"
+                subj, html = compose_new_user_email(email, claims.get("name", ""), manage)
+                get_provider().send(
+                    s, os.environ.get("NEW_USER_NOTIFY_TO", "noah.ballinger@ishalife.com"),
+                    subj, html, kind="new_user",
+                    cc=os.environ.get("NEW_USER_NOTIFY_CC", "sai.a@ishausa.org"))
+            except Exception:
+                pass   # never block sign-in on a notification failure
     resp = RedirectResponse("/")
     resp.set_cookie(COOKIE, token, httponly=True, samesite="lax", max_age=SESSION_TTL)
     return resp
@@ -172,7 +202,13 @@ def me(isha_session: Optional[str] = Cookie(default=None)):
     if not s:
         return {"logged_in": False, "auth": "google",
                 "odoo_url": os.environ.get("ODOO_BASE_URL", "")}
+    with get_session() as db:
+        access.ensure_user(db, s["login"], s.get("name", ""))
+        lists = access.accessible_lists(db, s["login"])
+        admin = access.is_admin(db, s["login"])
+        pending = access.is_pending(db, s["login"])
     return {"logged_in": True, "login": s["login"], "name": s.get("name", ""),
+            "is_admin": admin, "pending": pending, "lists": lists,
             "odoo_url": os.environ.get("ODOO_BASE_URL", "")}
 
 
@@ -342,6 +378,9 @@ def order_lines(order_id: int, _: dict = Depends(require_session)):
                 "compliance_flag": p.compliance_flag if p else "",
                 # demand
                 "avg_monthly_sales": sg.get("avg_monthly_sales"),
+                "sell_through": sg.get("sell_through"),
+                "units_sold": sg.get("units_sold"),
+                "months_active": sg.get("months_active"),
                 "forecast_mean": sg.get("forecast_mean"),
                 "baseline_monthly_sales": sg.get("baseline_monthly_sales"),
                 "forecast_monthly": sg.get("forecast_monthly"),
@@ -443,14 +482,16 @@ def place(order_id: int, _: dict = Depends(require_session)):
 
 
 @app.get("/api/us-ordering")
-def us_items(_: dict = Depends(require_session)):
+def us_items(sess: dict = Depends(require_session)):
+    require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
         return us_ordering.all_items(s, CFG)
 
 
 @app.post("/api/us-ordering/place")
-def us_place(body: dict, _: dict = Depends(require_session)):
+def us_place(body: dict, sess: dict = Depends(require_session)):
+    require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
         res = us_ordering.create_and_place_all(s, body.get("lines", {}), body.get("name", ""))
@@ -460,7 +501,8 @@ def us_place(body: dict, _: dict = Depends(require_session)):
 
 
 @app.get("/api/us-ordering/{vendor_id}")
-def us_vendor_items(vendor_id: int, _: dict = Depends(require_session)):
+def us_vendor_items(vendor_id: int, sess: dict = Depends(require_session)):
+    require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
         res = us_ordering.vendor_items(s, vendor_id, CFG)
@@ -470,7 +512,8 @@ def us_vendor_items(vendor_id: int, _: dict = Depends(require_session)):
 
 
 @app.post("/api/us-ordering/{vendor_id}/place")
-def us_vendor_place(vendor_id: int, body: dict, _: dict = Depends(require_session)):
+def us_vendor_place(vendor_id: int, body: dict, sess: dict = Depends(require_session)):
+    require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
         res = us_ordering.create_and_place(s, vendor_id, body.get("lines", {}),
@@ -489,18 +532,87 @@ def order_list(_: dict = Depends(require_session)):
 
 
 @app.post("/api/order-list")
-def order_list_upsert(body: dict, _: dict = Depends(require_session)):
+def order_list_upsert(body: dict, _: dict = Depends(require_admin)):
     with get_session() as s:
         it = catalog.upsert_order_list_item(s, body)
         return {"ok": True, "id": it.id, "global_sku": it.global_sku}
 
 
 @app.delete("/api/order-list/{global_sku}")
-def order_list_delete(global_sku: str, _: dict = Depends(require_session)):
+def order_list_delete(global_sku: str, _: dict = Depends(require_admin)):
     with get_session() as s:
         if not catalog.delete_order_list_item(s, global_sku):
             raise HTTPException(404, "not on order list")
         return {"ok": True}
+
+
+@app.get("/api/users")
+def users_list(_: dict = Depends(require_admin)):
+    with get_session() as s:
+        return {"users": access.list_users(s), "lists": access.ORDERABLE_LISTS}
+
+
+@app.post("/api/users")
+def users_upsert(body: dict, _: dict = Depends(require_admin)):
+    with get_session() as s:
+        try:
+            u = access.upsert_user(s, body.get("email", ""), body.get("name", ""),
+                                   body.get("role", "member"),
+                                   body.get("active", True))
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        if "access" in body and isinstance(body["access"], list):
+            access.set_access(s, u.email, body["access"])
+        return {"ok": True, "email": u.email}
+
+
+@app.post("/api/users/access")
+def users_access(body: dict, _: dict = Depends(require_admin)):
+    email = body.get("email", "")
+    if not email:
+        raise HTTPException(400, "email required")
+    with get_session() as s:
+        access.set_access(s, email, body.get("list_keys", []))
+        return {"ok": True}
+
+
+@app.delete("/api/users/{email}")
+def users_delete(email: str, sess: dict = Depends(require_admin)):
+    if email.lower() == (sess.get("login", "").lower()):
+        raise HTTPException(400, "You can't delete your own account.")
+    with get_session() as s:
+        if not access.delete_user(s, email):
+            raise HTTPException(404, "user not found")
+        return {"ok": True}
+
+
+@app.get("/api/products")
+def products_search(q: str = "", limit: int = 50, exclude_channel: str = "",
+                    _: dict = Depends(require_session)):
+    """Search the synced product catalogue for the master-list picker.
+    `exclude_channel` drops products already on that channel's order list."""
+    from .models import OrderListItem
+    ql = (q or "").strip().lower()
+    with get_session() as s:
+        skip = set()
+        if exclude_channel:
+            skip = set(s.exec(select(OrderListItem.global_sku).where(
+                OrderListItem.channel == exclude_channel)).all())
+        rows = []
+        for p in s.exec(select(Product)).all():
+            if p.global_sku in skip:
+                continue
+            hay = " ".join([p.name or "", p.global_sku, p.us_sku or "",
+                            p.category or "", p.barcode or ""]).lower()
+            if ql and ql not in hay:
+                continue
+            rows.append({"global_sku": p.global_sku, "name": p.name,
+                         "category": p.category, "us_sku": p.us_sku,
+                         "origin": p.origin, "vendor": p.vendor})
+            if len(rows) >= max(1, min(limit, 200)):
+                break
+        rows.sort(key=lambda r: (r["category"] or "", r["name"] or r["global_sku"]))
+        return {"items": rows}
 
 
 @app.put("/api/products/{global_sku}/tags")
@@ -592,9 +704,10 @@ def odoo_sync(sess: dict = Depends(require_session)):
 
 
 @app.get("/api/india/preview")
-def india_preview(_: dict = Depends(require_session)):
+def india_preview(sess: dict = Depends(require_session)):
     """Suggested India order lines from the cached snapshot (no DB writes) —
     used to pre-populate the India view list."""
+    require_list_access(sess, "INDIA_IMPORT")
     from .sync import latest_cached_pull
     from .service import compute_suggestions
     with get_session() as s:
@@ -618,21 +731,27 @@ def india_preview(_: dict = Depends(require_session)):
 
 
 @app.post("/api/india/draft")
-def india_draft(_: dict = Depends(require_session)):
+def india_draft(sess: dict = Depends(require_session)):
     """Return a working India draft order (reuse the latest open one, else
     generate a fresh one from the cache). The India view edits this order's
     lines like the original review tool, then places it."""
+    require_list_access(sess, "INDIA_IMPORT")
     from .sync import latest_cached_pull
     with get_session() as s:
-        drafts = [o for o in s.exec(select(Order).where(Order.status == "draft")).all()
-                  if (o.config_json or {}).get("channel") != "US_VENDOR"]
-        if drafts:
-            o = sorted(drafts, key=lambda x: x.created_at, reverse=True)[0]
-            return {"id": o.id, "name": o.name, "reused": True}
         cached = latest_cached_pull(s)
         if not cached:
             raise HTTPException(400, "No Odoo snapshot yet — sync first.")
         pull, batch_id = cached
+        drafts = [o for o in s.exec(select(Order).where(Order.status == "draft")).all()
+                  if (o.config_json or {}).get("channel") != "US_VENDOR"]
+        # Reuse a draft ONLY if it was built from the current good snapshot.
+        # A draft from an older sync is stale: its suggestion_json froze the
+        # demand fields (sell-through / velocity) at creation, so we regenerate
+        # rather than hand back an order with empty/outdated numbers.
+        fresh = [o for o in drafts if o.snapshot_batch_id == batch_id]
+        if fresh:
+            o = sorted(fresh, key=lambda x: x.created_at, reverse=True)[0]
+            return {"id": o.id, "name": o.name, "reused": True}
         d = datetime.utcnow()
         name = f"Q{(d.month-1)//3+1} {d.year} · {d.date().isoformat()}"
         order = create_order(s, name, pull, CFG, batch_id=batch_id)
@@ -642,8 +761,9 @@ def india_draft(_: dict = Depends(require_session)):
 
 
 @app.post("/api/india/place")
-def india_place(body: dict, _: dict = Depends(require_session)):
+def india_place(body: dict, sess: dict = Depends(require_session)):
     """Generate the India order from cache and place it in one action."""
+    require_list_access(sess, "INDIA_IMPORT")
     from .sync import latest_cached_pull
     from .service import place_order
     with get_session() as s:

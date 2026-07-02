@@ -117,6 +117,63 @@ Seed/inspect from the workbook on the command line:
 python scripts/seed_from_workbook.py "/path/to/Copy of USA INV CHK.xlsx"
 ```
 
+### Reporting with Metabase Open Source
+
+Metabase runs in development via Docker Compose:
+
+```bash
+docker compose up -d
+```
+
+Open **http://localhost:3000** and complete Metabase's first-run setup. The
+Metabase app metadata is stored in a Docker volume, separate from this app's
+database.
+
+Postgres is the one database the app runs on. Set this in `.env` (the app on
+the host reaches Postgres at `localhost`):
+
+```
+DATABASE_URL=postgresql+psycopg://isha:isha@localhost:5432/isha
+```
+
+If `DATABASE_URL` is unset the app defaults to the same local docker Postgres.
+It will **not** silently fall back to SQLite — if Postgres is unreachable it
+fails loudly and tells you to run `docker compose up -d`. (SQLite is used only
+by the test suite, which forces it via `backend/tests/conftest.py`.)
+
+One-time import of any old SQLite data:
+
+```bash
+python3 scripts/migrate_sqlite_to_postgres.py --replace
+```
+
+In Metabase, add a database connection with **Host: `db`** (the compose service
+name — not `localhost`, since Metabase runs inside Docker), Port `5432`,
+Database `isha`, user/pass `isha`/`isha`.
+
+Then point dashboards at the two reporting **views** (kept stable for Metabase,
+JSON columns already flattened):
+
+- `v_current_inventory` — latest synced on-hand, sales, `units_sold`,
+  `months_active`, `sell_through`, joined to product details.
+- `v_order_lines` — every order line with product info and the demand metrics
+  pulled out of `suggestion_json`.
+
+### Database maintenance (you shouldn't need to think about this)
+
+- **Schema changes**: adding a field to a model is automatic — startup runs an
+  additive migration (`_auto_add_missing_columns`) that adds new nullable
+  columns. It does **not** do renames, drops, or type changes; for those write
+  a one-off script (see `scripts/`) or add Alembic.
+- **Snapshots don't pile up**: each sync writes one batch; the sync prunes to
+  the most recent few (`ODOO_KEEP_BATCHES`, default 3), always keeping any
+  batch an order depends on.
+- **One cache layer**: the DB snapshot batch *is* the cache. The old per-read
+  disk cache is off by default (`ODOO_DISK_CACHE=1` to re-enable). Safe to
+  delete the old files: `rm -rf backend/data/odoo_cache/*`.
+- **Tests never touch Postgres**: run them with `./test.sh`; `./run.sh` only
+  serves.
+
 ### The three input modes (graceful degradation — all first-class)
 1. **Upload the workbook** (`.xlsx`) — reads the same sheets pasted today.
 2. **Upload the discrete Odoo exports** — INV + SALES (+ optional price list /

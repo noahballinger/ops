@@ -67,13 +67,16 @@ class OdooJsonDataSource:
             cache_dir=os.environ.get("ODOO_CACHE_DIR") or None,
             cache_ttl_seconds=int(os.environ.get("ODOO_CACHE_TTL_SECONDS", "3600")),
             page_size=int(os.environ.get("ODOO_PAGE_SIZE", "2000")),
-            throttle_seconds=float(os.environ.get("ODOO_THROTTLE_SECONDS", "0.2")))
+            throttle_seconds=float(os.environ.get("ODOO_THROTTLE_SECONDS", "0.2")),
+            disk_cache=os.environ.get("ODOO_DISK_CACHE", "0").lower()
+            in ("1", "true", "yes"))
 
     def cache_info(self) -> dict:
         """Cache configuration + current state (for the /api/odoo/status route)."""
         files = [f for f in os.listdir(self.cache_dir) if f.endswith(".json")] \
-            if os.path.isdir(self.cache_dir) else []
-        return {"cache_dir": os.path.abspath(self.cache_dir),
+            if (self.disk_cache and os.path.isdir(self.cache_dir)) else []
+        return {"disk_cache": self.disk_cache,
+                "cache_dir": os.path.abspath(self.cache_dir),
                 "cache_ttl_seconds": self.cache_ttl,
                 "page_size": self.page_size, "throttle_seconds": self.throttle,
                 "cached_reads": len(files)}
@@ -84,13 +87,18 @@ class OdooJsonDataSource:
                  cache_dir: Optional[str] = None,
                  cache_ttl_seconds: int = 3600,
                  page_size: int = 2000,
-                 throttle_seconds: float = 0.2):
+                 throttle_seconds: float = 0.2,
+                 disk_cache: bool = False):
         self.base_url = base_url.rstrip("/")
         self.db = db
         self._login = login
         self._password = password           # held in memory only
         self.warehouse = warehouse
         self.sales_model = sales_model
+        # Per-read disk cache is OFF by default. The single cache layer is the
+        # DB snapshot batch written by the sync; the disk cache was redundant
+        # and grew without bound. Opt in with ODOO_DISK_CACHE=1 if ever needed.
+        self.disk_cache = disk_cache
         self.cache_dir = cache_dir or os.path.join(
             os.path.dirname(__file__), "..", "..", "data", "odoo_cache")
         self.cache_ttl = cache_ttl_seconds
@@ -98,7 +106,8 @@ class OdooJsonDataSource:
         self.throttle = throttle_seconds
         self._sess = requests.Session()
         self._uid: Optional[int] = None
-        os.makedirs(self.cache_dir, exist_ok=True)
+        if self.disk_cache:
+            os.makedirs(self.cache_dir, exist_ok=True)
 
     # --------------------------------------------------------------- auth
     def authenticate(self) -> None:
@@ -209,20 +218,27 @@ class OdooJsonDataSource:
         from datetime import datetime, timedelta, timezone
         since = (datetime.now(timezone.utc) - timedelta(days=months * 31)) \
             .strftime("%Y-%m-%d %H:%M:%S")
-        # (line model, qty field, parent order model)
-        sources = [("pos.order.line", "qty", "pos.order"),
-                   ("sale.order.line", "product_uom_qty", "sale.order")]
+        # (line model, qty field, parent order model, accepted parent states)
+        # Only COUNT confirmed sales: skip draft quotations and cancelled
+        # orders. POS register sales are paid/done/invoiced; sale orders are
+        # confirmed once state is 'sale' (or 'done' for locked orders).
+        sources = [("pos.order.line", "qty", "pos.order",
+                    ["paid", "done", "invoiced"]),
+                   ("sale.order.line", "product_uom_qty", "sale.order",
+                    ["sale", "done"])]
         # bucket[code][(y,m)] = units
         bucket: Dict[str, Dict[tuple, float]] = {}
         total: Dict[str, float] = {}
         any_source = False
-        for line_model, qty_field, order_model in sources:
+        for line_model, qty_field, order_model, states in sources:
             if not self._model_exists(line_model):
                 continue
             any_source = True
             try:
                 lines = self._search_read_paged(
-                    line_model, [["order_id.date_order", ">=", since]],
+                    line_model,
+                    [["order_id.date_order", ">=", since],
+                     ["order_id.state", "in", states]],
                     ["product_id", "order_id", qty_field])
             except Exception as e:
                 res.warnings.append(f"{line_model} read failed: {e}")
@@ -335,7 +351,11 @@ class OdooJsonDataSource:
             })
             series = sorted(sales_series.get(code, []),
                             key=lambda d: (d["year"], d["month"]))
-            avg = (sum(d["units"] for d in series) / len(series)) if series \
+            # Sell-through velocity: total sold / months actually in stock
+            # (i.e. months that recorded sales), so stock-outs don't deflate it.
+            sold_total = sum(d["units"] for d in series)
+            months_active = len(series)
+            avg = (sold_total / months_active) if months_active \
                 else (sales_total.get(code, 0.0) / 12.0)
             on_hand = p.get("free_qty")
             if on_hand is None:
@@ -343,6 +363,7 @@ class OdooJsonDataSource:
             res.snapshots.append({
                 "global_sku": code, "on_hand": on_hand,
                 "useable_on_hand": on_hand, "avg_monthly_sales": avg,
+                "units_sold": sold_total, "months_active": months_active,
                 "monthly_sales_series": series, "source": "odoo_live"})
 
         res.in_transit = in_transit
@@ -392,6 +413,8 @@ class OdooJsonDataSource:
         return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
     def _cache_get(self, key: str):
+        if not self.disk_cache:
+            return None
         p = os.path.join(self.cache_dir, key + ".json")
         if os.path.exists(p) and (time.time() - os.path.getmtime(p)) < self.cache_ttl:
             with open(p) as fh:
@@ -399,10 +422,14 @@ class OdooJsonDataSource:
         return None
 
     def _cache_put(self, key: str, value) -> None:
+        if not self.disk_cache:
+            return
         with open(os.path.join(self.cache_dir, key + ".json"), "w") as fh:
             json.dump(value, fh)
 
     def clear_cache(self) -> None:
+        if not os.path.isdir(self.cache_dir):
+            return
         for f in os.listdir(self.cache_dir):
             if f.endswith(".json"):
                 os.remove(os.path.join(self.cache_dir, f))

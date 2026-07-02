@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-command launcher for the Isha Life USA Import Ordering tool.
-# Creates a venv, installs deps, runs tests, then serves the app at :8000.
+# Creates a venv, installs deps, then serves the app at :8000 (on Postgres).
+# Tests run separately via ./test.sh so a launch never touches the database.
 set -euo pipefail
 ROOT="$(dirname "$0")"
 
@@ -22,10 +23,9 @@ fi
 source .venv/bin/activate
 pip install -q -r requirements.txt
 
-echo "Running tests ..."
-pytest -q tests/ || { echo "Tests failed"; exit 1; }
-
+# The app runs on Postgres. Make sure it's up (docker compose up -d) and that
+# DATABASE_URL points at it; the server fails loudly otherwise.
 echo
 echo "Starting server on http://localhost:8000  (Ctrl-C to stop)"
-echo "Open that URL, create an order by uploading the workbook, review, export."
+echo "Run the test suite separately with ./test.sh"
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000

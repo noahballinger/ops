@@ -91,7 +91,9 @@ def build_inputs(pull: PullResult, cfg: EngineConfig
             product=pi, on_hand=sd.get("useable_on_hand", sd.get("on_hand", 0.0)),
             avg_monthly_sales=sd.get("avg_monthly_sales", 0.0),
             incoming_units_by_month=inc.get(g, [0.0] * cfg.horizon),
-            forecast=fc))
+            forecast=fc,
+            units_sold=sd.get("units_sold", sum(d.get("units", 0) for d in (sd.get("monthly_sales_series") or []))),
+            months_active=sd.get("months_active", len(sd.get("monthly_sales_series") or []))))
     return snaps, forecasts
 
 
@@ -133,11 +135,19 @@ def persist_pull(session, pull: PullResult, cfg: EngineConfig) -> str:
         session.add(obj)
     # snapshots + forecasts
     for sd in pull.snapshots:
+        series = sd.get("monthly_sales_series") or []
+        units_sold = sd.get("units_sold", sum(d.get("units", 0) for d in series))
+        months_active = sd.get("months_active", len(series))
+        on_hand = sd.get("on_hand", 0.0) or 0.0
+        sell_through = round(units_sold / (units_sold + on_hand), 4) \
+            if (units_sold + on_hand) > 0 else 0.0
         snap = InventorySnapshot(
             global_sku=sd["global_sku"], on_hand=sd.get("on_hand", 0.0),
             useable_on_hand=sd.get("useable_on_hand"),
-            monthly_sales_series=sd.get("monthly_sales_series", []),
+            monthly_sales_series=series,
             avg_monthly_sales=sd.get("avg_monthly_sales", 0.0),
+            units_sold=units_sold, months_active=months_active,
+            sell_through=sell_through,
             source=sd.get("source", "file_import"), batch_id=batch_id)
         session.add(snap)
         fc = forecasts.get(sd["global_sku"])
@@ -146,7 +156,8 @@ def persist_pull(session, pull: PullResult, cfg: EngineConfig) -> str:
                 global_sku=sd["global_sku"], monthly=fc.monthly, method=fc.method,
                 confidence=fc.confidence, low_data=fc.low_data, baseline=fc.baseline,
                 uncertainty_pct=fc.uncertainty_pct,
-                diverges_from_baseline=fc.diverges_from_baseline, notes=fc.notes))
+                diverges_from_baseline=fc.diverges_from_baseline, notes=fc.notes,
+                batch_id=batch_id))
     for it in pull.in_transit:
         session.add(InTransit(
             global_sku=it["global_sku"], quantity=it.get("quantity", 0.0),

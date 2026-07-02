@@ -67,9 +67,11 @@ class ProductInput:
 class SkuSnapshot:
     product: ProductInput
     on_hand: float                       # useable on-hand units
-    avg_monthly_sales: float             # trailing average (flat baseline)
+    avg_monthly_sales: float             # sell-through velocity (sold per in-stock month)
     incoming_units_by_month: List[float] # in-transit arriving in proj month 1..H
     forecast: Optional[Forecast] = None  # per-month demand; None => use flat
+    units_sold: float = 0.0              # total units sold in the trailing window
+    months_active: int = 0               # months the SKU was in stock / selling
 
 
 @dataclass
@@ -81,6 +83,9 @@ class Suggestion:
     source: str
     # demand
     avg_monthly_sales: float
+    sell_through: float          # sold / (sold + on-hand) over the window, 0..1
+    units_sold: float            # total units sold in the trailing window
+    months_active: int           # months the SKU was in stock / selling
     forecast_monthly: List[float]
     forecast_mean: float
     baseline_monthly_sales: float
@@ -222,6 +227,10 @@ def suggest_one(snap: SkuSnapshot, cfg: EngineConfig) -> Suggestion:
         global_sku=p.global_sku, name=p.name, us_sku=p.us_sku,
         category=p.category, source=p.source,
         avg_monthly_sales=round(avg, 3),
+        sell_through=round((snap.units_sold / (snap.units_sold + snap.on_hand))
+                           if (snap.units_sold + snap.on_hand) > 0 else 0.0, 3),
+        units_sold=round(snap.units_sold, 1),
+        months_active=snap.months_active,
         forecast_monthly=[round(m, 2) for m in (fc.monthly if fc else [avg] * horizon)],
         forecast_mean=round(fc.forecast_mean if fc else avg, 3),
         baseline_monthly_sales=round(fc.baseline if fc else avg, 3),

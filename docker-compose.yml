@@ -1,4 +1,4 @@
-# Postgres for the back-office PC. Run:  docker compose up -d
+# Postgres + Metabase for the back-office PC. Run:  docker compose up -d
 # Then set DATABASE_URL in .env to:
 #   postgresql+psycopg://isha:isha@localhost:5432/isha
 services:
@@ -13,5 +13,21 @@ services:
       - "5432:5432"
     volumes:
       - isha_pgdata:/var/lib/postgresql/data
+
+  metabase:
+    image: metabase/metabase:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    environment:
+      # Dev-safe Metabase application metadata. Reporting data still comes
+      # from the Postgres service above once the app is pointed at it.
+      MB_DB_FILE: /metabase-data/metabase.db
+    volumes:
+      - metabase_data:/metabase-data
+
 volumes:
   isha_pgdata:
+  metabase_data:

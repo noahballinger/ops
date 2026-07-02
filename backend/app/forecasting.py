@@ -106,7 +106,9 @@ def forecast_demand(series: MonthlySalesSeries,
     if n_stockout:
         notes.append(f"{n_stockout} stock-out/suppressed month(s) excluded from the fit")
 
-    # Baseline = flat average of useable months (the workbook's annual/12).
+    # Baseline = sell-through velocity: average over IN-STOCK (selling) months
+    # only, so stock-out months don't deflate demand. (Stock-out/suppressed
+    # points are excluded above.)
     baseline = (sum(p.units for p in pts) / n) if n else 0.0
     avg_monthly = baseline  # denominator for MOH conversions
 

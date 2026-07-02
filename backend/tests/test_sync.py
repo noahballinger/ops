@@ -49,6 +49,10 @@ class FakeOdoo:
 
 
 def _clean(s):
+    # Second line of defence (conftest is the first): never bulk-delete unless
+    # we're on the disposable SQLite test database.
+    from app.db import IS_SQLITE
+    assert IS_SQLITE, "refusing destructive cleanup on a non-SQLite database"
     for m in (SyncState, InventorySnapshot, InTransit, Product):
         s.exec(delete(m))
     s.commit()

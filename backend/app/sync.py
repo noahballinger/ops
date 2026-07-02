@@ -90,7 +90,44 @@ def run_one_sync(session, datasource, cfg: Optional[EngineConfig] = None) -> Syn
     st.last_error = ""
     session.add(st)
     session.commit()
+    _prune_old_batches(session, keep=KEEP_BATCHES)
     return st
+
+
+# Snapshot batches accumulate one set of rows per sync; keep only the most
+# recent few so the cache doesn't grow without bound. Batches referenced by a
+# saved order are always kept (the order froze that snapshot).
+KEEP_BATCHES = int(os.environ.get("ODOO_KEEP_BATCHES", "3"))
+
+
+def _prune_old_batches(session, keep: int = 3) -> None:
+    from .models import Order, DemandForecast
+    batches = [b for b in session.exec(
+        select(InventorySnapshot.batch_id).distinct()).all() if b]
+    # newest-first by the max snapshot id in each batch
+    order_key = {}
+    for b in batches:
+        mx = session.exec(select(InventorySnapshot.id).where(
+            InventorySnapshot.batch_id == b).order_by(
+            InventorySnapshot.id.desc())).first()
+        order_key[b] = mx or 0
+    ranked = sorted(batches, key=lambda b: order_key[b], reverse=True)
+    keep_set = set(ranked[:max(keep, 1)])
+    # never delete a batch an order depends on, nor the current good batch
+    st = session.get(SyncState, 1)
+    if st and st.good_batch_id:
+        keep_set.add(st.good_batch_id)
+    keep_set.update(o.snapshot_batch_id for o in session.exec(
+        select(Order)).all() if o.snapshot_batch_id)
+    drop = [b for b in batches if b not in keep_set]
+    if not drop:
+        return
+    for model in (InventorySnapshot, InTransit, DemandForecast):
+        if hasattr(model, "batch_id"):
+            for row in session.exec(select(model).where(
+                    model.batch_id.in_(drop))).all():
+                session.delete(row)
+    session.commit()
 
 
 def latest_cached_pull(session) -> Optional[PullResult]:
@@ -121,6 +158,7 @@ def latest_cached_pull(session) -> Optional[PullResult]:
         "global_sku": s.global_sku, "on_hand": s.on_hand,
         "useable_on_hand": s.useable_on_hand,
         "avg_monthly_sales": s.avg_monthly_sales,
+        "units_sold": s.units_sold, "months_active": s.months_active,
         "monthly_sales_series": s.monthly_sales_series, "source": s.source,
     } for s in snaps]
     pull.in_transit = [{
