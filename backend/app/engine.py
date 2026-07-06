@@ -223,14 +223,16 @@ def suggest_one(snap: SkuSnapshot, cfg: EngineConfig) -> Suggestion:
     profit_lost = margin * air_round
 
     fc = snap.forecast
+    _units = snap.units_sold or 0.0          # defensive: never None
+    _onhand = snap.on_hand or 0.0
     return Suggestion(
         global_sku=p.global_sku, name=p.name, us_sku=p.us_sku,
         category=p.category, source=p.source,
         avg_monthly_sales=round(avg, 3),
-        sell_through=round((snap.units_sold / (snap.units_sold + snap.on_hand))
-                           if (snap.units_sold + snap.on_hand) > 0 else 0.0, 3),
-        units_sold=round(snap.units_sold, 1),
-        months_active=snap.months_active,
+        sell_through=round((_units / (_units + _onhand))
+                           if (_units + _onhand) > 0 else 0.0, 3),
+        units_sold=round(_units, 1),
+        months_active=snap.months_active or 0,
         forecast_monthly=[round(m, 2) for m in (fc.monthly if fc else [avg] * horizon)],
         forecast_mean=round(fc.forecast_mean if fc else avg, 3),
         baseline_monthly_sales=round(fc.baseline if fc else avg, 3),

@@ -87,13 +87,22 @@ def build_inputs(pull: PullResult, cfg: EngineConfig
             compliance_flag=p.get("compliance_flag", ""),
             target_moh_override=p.get("target_moh_override"),
             moq=p.get("moq"))
+        # units_sold / months_active may be missing OR NULL (rows synced before
+        # those columns existed). Recompute from the series when absent/None so
+        # the engine never sees None.
+        _series = sd.get("monthly_sales_series") or []
+        _units = sd.get("units_sold")
+        if _units is None:
+            _units = sum(d.get("units", 0) for d in _series)
+        _active = sd.get("months_active")
+        if _active is None:
+            _active = len(_series)
         snaps.append(SkuSnapshot(
             product=pi, on_hand=sd.get("useable_on_hand", sd.get("on_hand", 0.0)),
             avg_monthly_sales=sd.get("avg_monthly_sales", 0.0),
             incoming_units_by_month=inc.get(g, [0.0] * cfg.horizon),
             forecast=fc,
-            units_sold=sd.get("units_sold", sum(d.get("units", 0) for d in (sd.get("monthly_sales_series") or []))),
-            months_active=sd.get("months_active", len(sd.get("monthly_sales_series") or []))))
+            units_sold=_units or 0.0, months_active=_active or 0))
     return snaps, forecasts
 
 
@@ -171,12 +180,16 @@ def persist_pull(session, pull: PullResult, cfg: EngineConfig) -> str:
 # Orders
 # --------------------------------------------------------------------------
 def create_order(session, name: str, pull: PullResult, cfg: EngineConfig,
-                 batch_id: Optional[str] = None) -> Order:
+                 batch_id: Optional[str] = None,
+                 allowed_skus: Optional[set] = None) -> Order:
     # If batch_id is supplied the snapshot was already persisted (e.g. by the
     # background Odoo sync) -- don't re-persist, just read it.
     if batch_id is None:
         batch_id = persist_pull(session, pull, cfg)
     suggestions = compute_suggestions(pull, cfg)
+    # allowed_skus restricts the order to a member's sublist (None => whole list)
+    if allowed_skus is not None:
+        suggestions = [s for s in suggestions if s.global_sku in allowed_skus]
     order = Order(name=name, status="draft", snapshot_batch_id=batch_id,
                   config_json={"sea_lead_months": cfg.sea_lead_months,
                                "air_lead_months": cfg.air_lead_months,

@@ -251,9 +251,47 @@ class AppUser(SQLModel, table=True):
 
 
 class ListAccess(SQLModel, table=True):
+    # LEGACY (pre-groups direct grants). Retained so existing rows don't error;
+    # access is now resolved through Groups. Not written by the app anymore.
     email: str = Field(primary_key=True)
     list_key: str = Field(primary_key=True)       # e.g. INDIA_IMPORT | US_VENDOR
     granted_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# --------------------------------------------------------------------------
+# Groups. The main admin creates a Group, assigns it master lists (GroupList),
+# and names a group admin. The group admin manages members (GroupMember) and
+# can carve a per-member Sublist (a subset of a list's SKUs) for each member.
+# A user's orderable lists = the lists of every group they belong to.
+# --------------------------------------------------------------------------
+class Group(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    admin_email: str = ""                          # the group admin
+    active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class GroupList(SQLModel, table=True):
+    """A master list assigned to a group (by the main admin)."""
+    group_id: int = Field(primary_key=True)
+    list_key: str = Field(primary_key=True)        # INDIA_IMPORT | US_VENDOR | ...
+
+
+class GroupMember(SQLModel, table=True):
+    group_id: int = Field(primary_key=True)
+    email: str = Field(primary_key=True)
+    added_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class Sublist(SQLModel, table=True):
+    """A single SKU a group admin has assigned to one member within a list.
+    If a member has ANY sublist rows for (group, list), they may order only
+    those SKUs from that list; otherwise they get the whole group list."""
+    group_id: int = Field(primary_key=True)
+    email: str = Field(primary_key=True)
+    list_key: str = Field(primary_key=True)
+    global_sku: str = Field(primary_key=True)
 
 
 class MessageLog(SQLModel, table=True):

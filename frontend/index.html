@@ -571,6 +571,8 @@ function route(){
   else if(h==='/items/available-lists')renderAvailableLists();
   else if(h.startsWith('/items/list/'))renderListEditor(decodeURIComponent(h.split('/').pop()));
   else if(h==='/admin/users')renderUsersAdmin();
+  else if(h==='/admin/groups')renderGroups();
+  else if(h.startsWith('/admin/groups/'))renderGroupDetail(decodeURIComponent(h.split('/').pop()));
   else if(h==='/order/india')renderIndia();
   else if(h==='/order/usa')renderUSA();
   else if(h==='/order/track')renderTrack();
@@ -961,8 +963,8 @@ function renderUsersAdmin(){
   const wrap=el('div',{class:'wrap view'});
   wrap.appendChild(el('div',{class:'viewhead'},[
     backHome(),
-    el('h2',null,['Users & Access']),
-    el('span',{class:'sub'},['Add people and choose which lists each can order from.'])]));
+    el('h2',null,['Users']),
+    el('span',{class:'sub'},['People and roles. List access is granted through Groups.'])]));
 
   // add-user form
   const fEmail=el('input',{class:'mat-white',type:'email',placeholder:'name@company.com',style:'flex:2;min-width:180px'});
@@ -991,30 +993,20 @@ function renderUsersAdmin(){
 
   function load(){
     api('/api/users').then(d=>{
-      const lists=d.lists||[],users=d.users||[];
+      const users=d.users||[];
       tbl.innerHTML='';
-      // header row
       tbl.appendChild(el('div',{class:'urow uhead'},[
         el('div',null,['User']),
         el('div',null,['Role']),
-        ...lists.map(L=>el('div',{class:'ucol',title:L.label},[L.slug.toUpperCase()])),
+        el('div',{style:'flex:2'},['Groups']),
         el('div',null,[''])]));
       users.forEach(u=>{
-        const acc=new Set(u.access||[]);
         const me=(state.me.login||'').toLowerCase()===u.email;
         const roleSel=el('select',{class:'mat-white',onchange:()=>save(u,{role:roleSel.value})},[
           el('option',{value:'member',...(u.role==='member'?{selected:''}:{})},['Member']),
           el('option',{value:'admin',...(u.role==='admin'?{selected:''}:{})},['Admin'])]);
-        const checks=lists.map(L=>{
-          const isAdmin=u.role==='admin';
-          const cb=el('input',{type:'checkbox',...((acc.has(L.key)||isAdmin)?{checked:''}:{}),
-            ...(isAdmin?{disabled:''}:{}),
-            onchange:()=>{const keys=lists.filter(x=>x.key!==L.key&&acc.has(x.key)).map(x=>x.key);
-              if(cb.checked)keys.push(L.key);
-              api('/api/users/access',{method:'POST',headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({email:u.email,list_keys:keys})}).then(load);}});
-          return el('div',{class:'ucol'},[cb]);
-        });
+        const grpTxt=u.role==='admin'?'all lists (main admin)'
+          :[...(u.admin_of||[]).map(g=>g+' (admin)'),...(u.groups||[])].join(', ')||'— none —';
         const del=el('button',{class:'le-remove press',title:me?"You can't delete yourself":'Delete user',
           ...(me?{disabled:'',style:'opacity:.3'}:{}),
           onclick:()=>{if(me)return;if(confirm('Delete '+u.email+'?'))
@@ -1024,7 +1016,7 @@ function renderUsersAdmin(){
             el('div',{class:'le-name'},[u.name||u.email]),
             el('div',{class:'imeta'},[u.email+(me?' · you':'')])]),
           el('div',null,[roleSel]),
-          ...checks,
+          el('div',{class:'sub',style:'flex:2;min-width:0'},[grpTxt]),
           el('div',null,[del])]));
       });
       if(!users.length)tbl.appendChild(el('div',{class:'sub',style:'padding:10px'},['No users yet.']));
@@ -1033,6 +1025,162 @@ function renderUsersAdmin(){
   function save(u,patch){
     api('/api/users',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({email:u.email,name:u.name,role:u.role,active:u.active,...patch})}).then(load);
+  }
+  load();
+}
+
+/* ===================== GROUPS ===================== */
+function renderGroups(){
+  if(!(state.me&&(state.me.is_admin||state.me.group_admin))){navigate('/');return;}
+  state.view='groups';
+  const main=!!state.me.is_admin;
+  const v=$('#view');v.innerHTML='';
+  const wrap=el('div',{class:'wrap view'});
+  wrap.appendChild(el('div',{class:'viewhead'},[backHome(),el('h2',null,['Groups']),
+    el('span',{class:'sub'},[main?'Create groups, assign lists, name a group admin.':'Groups you administer.'])]));
+  const createCard=el('div',{class:'card mat-white'});
+  if(main)wrap.appendChild(createCard);
+  const grid=el('div',{class:'listgrid'});
+  wrap.appendChild(grid);
+  v.appendChild(wrap);
+  let allLists=[];
+
+  function drawCreate(){
+    createCard.innerHTML='';
+    const nm=el('input',{class:'mat-white',placeholder:'Group name',style:'flex:2;min-width:150px'});
+    const adm=el('input',{class:'mat-white',type:'email',placeholder:'Group admin email',style:'flex:2;min-width:170px'});
+    const msg=el('span',{class:'sub'});
+    const boxes=allLists.map(L=>{const cb=el('input',{type:'checkbox'});cb._key=L.key;
+      return el('label',{class:'sub',style:'display:inline-flex;gap:6px;align-items:center;margin-right:14px'},[cb,L.label]);});
+    const btn=el('button',{class:'btn-primary press',onclick:()=>{
+      if(!nm.value.trim()){msg.textContent='Name required';return;}
+      const keys=boxes.map(l=>l.firstChild).filter(c=>c.checked).map(c=>c._key);
+      api('/api/groups',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:nm.value,admin_email:adm.value,list_keys:keys})})
+        .then(()=>{load();}).catch(()=>{msg.textContent='Failed';});}},['Create group']);
+    createCard.appendChild(el('div',{class:'wtitle',style:'margin-bottom:8px'},['New group']));
+    createCard.appendChild(el('div',{style:'display:flex;gap:10px;flex-wrap:wrap;align-items:center'},[nm,adm,btn,msg]));
+    createCard.appendChild(el('div',{style:'margin-top:10px'},[el('span',{class:'sub'},['Lists: ']),...boxes]));
+  }
+  function load(){
+    api('/api/groups').then(d=>{
+      allLists=d.lists||[];if(main)drawCreate();
+      grid.innerHTML='';
+      (d.groups||[]).forEach(g=>{
+        const slugs=(g.lists||[]).map(k=>((allLists.find(l=>l.key===k)||{}).label)||k);
+        grid.appendChild(el('div',{class:'listcard mat-white'},[
+          el('div',{class:'lc-top'},[el('span',{class:'lc-ic'},[icon('list')]),
+            el('span',{class:'lc-tag'+(g.active?' live':'')},[g.active?'Active':'Inactive'])]),
+          el('div',{class:'lc-title'},[g.name]),
+          el('div',{class:'sub'},['Admin: '+(g.admin_email||'—')]),
+          el('div',{class:'sub'},[(slugs.join(', ')||'no lists')+' · '+(g.members||[]).length+' member'+((g.members||[]).length===1?'':'s')]),
+          el('div',{style:'margin-top:auto;display:flex;gap:8px;align-items:center'},[
+            el('button',{class:'btn-primary press',style:'padding:7px 13px;border-radius:10px',onclick:()=>navigate('/admin/groups/'+g.id)},['Open']),
+            ...(main?[el('button',{class:'le-remove press',title:'Delete group',onclick:()=>{
+              if(confirm('Delete group "'+g.name+'"?'))api('/api/groups/'+g.id,{method:'DELETE'}).then(load);}},['×'])]:[])])]));
+      });
+      if(!(d.groups||[]).length)grid.appendChild(el('div',{class:'card mat-white',style:'text-align:center'},[el('div',{class:'sub'},['No groups yet.'])]));
+    }).catch(()=>{navigate('/');});
+  }
+  load();
+}
+
+function renderGroupDetail(id){
+  id=parseInt(id,10);
+  if(!(state.me&&(state.me.is_admin||state.me.group_admin))){navigate('/');return;}
+  state.view='groupdetail';
+  const main=!!state.me.is_admin;
+  const v=$('#view');v.innerHTML='';
+  const wrap=el('div',{class:'wrap view'});
+  wrap.appendChild(el('div',{class:'viewhead'},[
+    el('button',{class:'backbtn mat-white press',onclick:()=>navigate('/admin/groups')},['← Groups']),
+    el('h2',{id:'gdName'},['Group']),el('span',{class:'sub',id:'gdSub'})]));
+  const settingsCard=el('div',{class:'card mat-white'});
+  const membersCard=el('div',{class:'card mat-white'});
+  wrap.appendChild(settingsCard);wrap.appendChild(membersCard);
+  v.appendChild(wrap);
+  let allLists=[],master=null;
+
+  function ensureMeta(){
+    const p=[];
+    if(!allLists.length)p.push(api('/api/groups').then(d=>{allLists=d.lists||[];}).catch(()=>{}));
+    if(master===null)p.push(api('/api/order-list').then(d=>{master=d.items||[];}).catch(()=>{master=[];}));
+    return Promise.all(p);
+  }
+  function load(){
+    ensureMeta().then(()=>api('/api/groups/'+id)).then(d=>{
+      $('#gdName').textContent=d.name;
+      $('#gdSub').textContent=(d.lists||[]).map(l=>l.label).join(' · ');
+      drawSettings(d);drawMembers(d);
+    }).catch(()=>navigate('/admin/groups'));
+  }
+  function drawSettings(d){
+    settingsCard.innerHTML='';
+    if(!main){settingsCard.style.display='none';return;}
+    const nm=el('input',{class:'mat-white',value:d.name,style:'flex:2;min-width:150px'});
+    const adm=el('input',{class:'mat-white',type:'email',value:d.admin_email||'',placeholder:'Group admin email',style:'flex:2;min-width:170px'});
+    const have=new Set((d.lists||[]).map(l=>l.key));
+    const boxes=allLists.map(L=>{const cb=el('input',{type:'checkbox',...(have.has(L.key)?{checked:''}:{})});cb._key=L.key;
+      return el('label',{class:'sub',style:'display:inline-flex;gap:6px;align-items:center;margin-right:14px'},[cb,L.label]);});
+    const msg=el('span',{class:'sub'});
+    const save=el('button',{class:'btn-primary press',onclick:()=>{
+      const keys=boxes.map(l=>l.firstChild).filter(c=>c.checked).map(c=>c._key);
+      api('/api/groups',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:id,name:nm.value,admin_email:adm.value,list_keys:keys,active:d.active})})
+        .then(()=>{msg.textContent='Saved ✓';setTimeout(()=>msg.textContent='',1200);load();}).catch(()=>{msg.textContent='Failed';});}},['Save']);
+    settingsCard.appendChild(el('div',{class:'wtitle',style:'margin-bottom:8px'},['Group settings']));
+    settingsCard.appendChild(el('div',{style:'display:flex;gap:10px;flex-wrap:wrap;align-items:center'},[nm,adm,save,msg]));
+    settingsCard.appendChild(el('div',{style:'margin-top:10px'},[el('span',{class:'sub'},['Lists: ']),...boxes]));
+  }
+  function drawMembers(d){
+    membersCard.innerHTML='';
+    membersCard.appendChild(el('div',{class:'wtitle',style:'margin-bottom:8px'},['Members']));
+    const em=el('input',{class:'mat-white',type:'email',placeholder:'member@company.com',style:'flex:2;min-width:180px'});
+    const add=el('button',{class:'btn-primary press',onclick:()=>{
+      if(!em.value.trim())return;
+      api('/api/groups/'+id+'/members',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:em.value.trim()})}).then(()=>{em.value='';load();}).catch(()=>{});}},['Add member']);
+    membersCard.appendChild(el('div',{style:'display:flex;gap:10px;align-items:center;margin-bottom:12px'},[em,add]));
+    (d.members||[]).forEach(mem=>membersCard.appendChild(memberRow(d,mem)));
+    if(!(d.members||[]).length)membersCard.appendChild(el('div',{class:'sub',style:'padding:8px'},['No members yet.']));
+  }
+  function memberRow(d,mem){
+    const row=el('div',{class:'card mat-white',style:'padding:14px;margin-bottom:10px'});
+    const head=el('div',{style:'display:flex;align-items:center;gap:10px'},[
+      el('div',{style:'flex:1;min-width:0'},[
+        el('div',{class:'le-name'},[mem.name||mem.email]),
+        el('div',{class:'imeta'},[mem.email])]),
+      el('button',{class:'le-remove press',title:'Remove member',onclick:()=>{
+        if(confirm('Remove '+mem.email+' from group?'))
+          api('/api/groups/'+id+'/members/'+encodeURIComponent(mem.email),{method:'DELETE'}).then(load);}},['×'])]);
+    row.appendChild(head);
+    // per-list sublist editors
+    (d.lists||[]).forEach(L=>{
+      const cur=new Set((mem.sublists||{})[L.key]||[]);
+      const items=(master||[]).filter(i=>i.channel===L.key);
+      const summary=el('div',{class:'sub',style:'margin-top:8px'},[
+        L.label+' — '+(cur.size?(cur.size+' of '+items.length+' items'):'all '+items.length+' items')]);
+      const editBtn=el('button',{class:'le-toggle press',style:'margin-left:8px',onclick:()=>{
+        panel.style.display=panel.style.display==='none'?'block':'none';}},['Edit sublist']);
+      const panel=el('div',{style:'display:none;margin-top:8px;max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px'});
+      const boxes=items.map(it=>{const cb=el('input',{type:'checkbox',...(cur.has(it.global_sku)?{checked:''}:{})});cb._sku=it.global_sku;
+        return el('label',{style:'display:flex;gap:8px;align-items:center;padding:4px 2px'},[cb,
+          el('span',{class:'sub'},[(it.name||it.global_sku)+' · '+(it.us_sku||it.global_sku)])]);});
+      const saveBtn=el('button',{class:'btn-primary press',style:'padding:6px 12px;border-radius:9px;margin-top:6px',onclick:()=>{
+        const skus=boxes.map(l=>l.firstChild).filter(c=>c.checked).map(c=>c._sku);
+        api('/api/groups/'+id+'/members/'+encodeURIComponent(mem.email)+'/sublist',{method:'PUT',
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({list_key:L.key,global_skus:skus})})
+          .then(load).catch(()=>{});}},['Save sublist']);
+      const clearBtn=el('button',{class:'mat-white press',style:'padding:6px 12px;border-radius:9px;margin:6px 0 0 8px',onclick:()=>{
+        api('/api/groups/'+id+'/members/'+encodeURIComponent(mem.email)+'/sublist',{method:'PUT',
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({list_key:L.key,global_skus:[]})})
+          .then(load).catch(()=>{});}},['Clear (all items)']);
+      if(!items.length)panel.appendChild(el('div',{class:'sub'},['This list has no products yet.']));
+      else{boxes.forEach(b=>panel.appendChild(b));panel.appendChild(el('div',null,[saveBtn,clearBtn]));}
+      row.appendChild(el('div',{style:'display:flex;align-items:center'},[summary,editBtn]));
+      row.appendChild(panel);
+    });
+    return row;
   }
   load();
 }
@@ -1374,12 +1522,17 @@ function toggleMenu(){
         api('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({india_order_recipients:recips.value,email_cc:cc.value})})
           .then(()=>{msg.textContent='Saved ✓';setTimeout(()=>msg.textContent='',1500);});}},['Save']),msg])]);
-  if(state.me&&state.me.is_admin){
+  const menuLink=(label,path)=>{const ic=icon('list');ic.style.width='18px';ic.style.height='18px';
+    return el('div',{class:'swatch',style:'cursor:pointer',
+      onclick:()=>{m.remove();navigate(path);}},[ic,el('span',null,[label])]);};
+  if(state.me&&(state.me.is_admin||state.me.group_admin)){
     m.appendChild(el('hr',{style:'border:none;border-top:1px solid var(--line);margin:12px 0'}));
-    const adminIc=icon('list');adminIc.style.width='18px';adminIc.style.height='18px';
-    m.appendChild(el('div',{class:'swatch',style:'cursor:pointer',
-      onclick:()=>{m.remove();navigate('/admin/users');}},
-      [adminIc,el('span',null,['Manage users & access'])]));
+    if(state.me.is_admin){
+      m.appendChild(menuLink('Manage users','/admin/users'));
+      m.appendChild(menuLink('Manage groups','/admin/groups'));
+    }else{
+      m.appendChild(menuLink('My groups','/admin/groups'));
+    }
   }
   document.body.appendChild(m);
   setTimeout(()=>document.addEventListener('click',function h(e){

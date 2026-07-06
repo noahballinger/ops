@@ -211,9 +211,11 @@ def me(isha_session: Optional[str] = Cookie(default=None)):
         lists = access.accessible_lists(db, s["login"])
         admin = access.is_admin(db, s["login"])
         pending = access.is_pending(db, s["login"])
+        manages = access.groups_i_admin(db, s["login"])
+        group_admin = (not admin) and len(manages) > 0
     return {"logged_in": True, "login": s["login"], "name": s.get("name", ""),
-            "is_admin": admin, "pending": pending, "lists": lists,
-            "odoo_url": os.environ.get("ODOO_BASE_URL", "")}
+            "is_admin": admin, "group_admin": group_admin, "pending": pending,
+            "lists": lists, "odoo_url": os.environ.get("ODOO_BASE_URL", "")}
 
 
 # ----------------------------------------------------------------- config
@@ -485,12 +487,27 @@ def place(order_id: int, _: dict = Depends(require_session)):
         return res
 
 
+def _us_sublist_filter_items(s, sess, res):
+    """Narrow a US result's items to the caller's sublist (if any)."""
+    allowed = access.allowed_skus(s, sess.get("login", ""), "US_VENDOR")
+    if allowed is not None and isinstance(res, dict) and "items" in res:
+        res["items"] = [i for i in res["items"] if i.get("global_sku") in allowed]
+    return res
+
+
+def _us_sublist_filter_lines(s, sess, lines):
+    allowed = access.allowed_skus(s, sess.get("login", ""), "US_VENDOR")
+    if allowed is None:
+        return lines or {}
+    return {k: v for k, v in (lines or {}).items() if k in allowed}
+
+
 @app.get("/api/us-ordering")
 def us_items(sess: dict = Depends(require_session)):
     require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
-        return us_ordering.all_items(s, CFG)
+        return _us_sublist_filter_items(s, sess, us_ordering.all_items(s, CFG))
 
 
 @app.post("/api/us-ordering/place")
@@ -498,7 +515,8 @@ def us_place(body: dict, sess: dict = Depends(require_session)):
     require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
-        res = us_ordering.create_and_place_all(s, body.get("lines", {}), body.get("name", ""))
+        lines = _us_sublist_filter_lines(s, sess, body.get("lines", {}))
+        res = us_ordering.create_and_place_all(s, lines, body.get("name", ""))
         if res.get("error"):
             raise HTTPException(400, res["error"])
         return res
@@ -512,7 +530,7 @@ def us_vendor_items(vendor_id: int, sess: dict = Depends(require_session)):
         res = us_ordering.vendor_items(s, vendor_id, CFG)
         if res.get("error"):
             raise HTTPException(404, res["error"])
-        return res
+        return _us_sublist_filter_items(s, sess, res)
 
 
 @app.post("/api/us-ordering/{vendor_id}/place")
@@ -520,8 +538,8 @@ def us_vendor_place(vendor_id: int, body: dict, sess: dict = Depends(require_ses
     require_list_access(sess, "US_VENDOR")
     from . import us_ordering
     with get_session() as s:
-        res = us_ordering.create_and_place(s, vendor_id, body.get("lines", {}),
-                                           body.get("name", ""))
+        lines = _us_sublist_filter_lines(s, sess, body.get("lines", {}))
+        res = us_ordering.create_and_place(s, vendor_id, lines, body.get("name", ""))
         if res.get("error"):
             raise HTTPException(400, res["error"])
         return res
@@ -565,19 +583,7 @@ def users_upsert(body: dict, _: dict = Depends(require_admin)):
                                    body.get("active", True))
         except ValueError as e:
             raise HTTPException(400, str(e))
-        if "access" in body and isinstance(body["access"], list):
-            access.set_access(s, u.email, body["access"])
         return {"ok": True, "email": u.email}
-
-
-@app.post("/api/users/access")
-def users_access(body: dict, _: dict = Depends(require_admin)):
-    email = body.get("email", "")
-    if not email:
-        raise HTTPException(400, "email required")
-    with get_session() as s:
-        access.set_access(s, email, body.get("list_keys", []))
-        return {"ok": True}
 
 
 @app.delete("/api/users/{email}")
@@ -587,6 +593,96 @@ def users_delete(email: str, sess: dict = Depends(require_admin)):
     with get_session() as s:
         if not access.delete_user(s, email):
             raise HTTPException(404, "user not found")
+        return {"ok": True}
+
+
+# ------------------------------------------------------------------ groups
+def _require_group_manage(sess: dict, group_id: int) -> None:
+    with get_session() as s:
+        if not access.can_manage_group(s, sess.get("login", ""), group_id):
+            raise HTTPException(403, "You don't manage this group.")
+
+
+@app.get("/api/groups")
+def groups_list(sess: dict = Depends(require_session)):
+    """Groups the caller may manage (main admin => all; group admin => theirs).
+    Also returns the assignable lists and the product-catalogue-free list meta."""
+    with get_session() as s:
+        gid_is_main = access.is_admin(s, sess.get("login", ""))
+        groups = access.groups_i_admin(s, sess.get("login", ""))
+        return {"groups": groups, "lists": access.ORDERABLE_LISTS,
+                "is_main_admin": gid_is_main}
+
+
+@app.get("/api/groups/{group_id}")
+def group_get(group_id: int, sess: dict = Depends(require_session)):
+    _require_group_manage(sess, group_id)
+    with get_session() as s:
+        d = access.group_detail(s, group_id)
+        if not d:
+            raise HTTPException(404, "group not found")
+        return d
+
+
+@app.post("/api/groups")
+def group_create_or_update(body: dict, _: dict = Depends(require_admin)):
+    """Create (no id) or update (with id) a group. Main admin only —
+    only the main admin sets a group's name/admin/lists."""
+    with get_session() as s:
+        if body.get("id"):
+            g = access.update_group(s, int(body["id"]), name=body.get("name"),
+                                    admin_email=body.get("admin_email"),
+                                    active=body.get("active"),
+                                    list_keys=body.get("list_keys"))
+            if not g:
+                raise HTTPException(404, "group not found")
+        else:
+            if not (body.get("name") or "").strip():
+                raise HTTPException(400, "name required")
+            g = access.create_group(s, body["name"], body.get("admin_email", ""),
+                                    body.get("list_keys"))
+        return {"ok": True, "id": g.id}
+
+
+@app.delete("/api/groups/{group_id}")
+def group_delete(group_id: int, _: dict = Depends(require_admin)):
+    with get_session() as s:
+        if not access.delete_group(s, group_id):
+            raise HTTPException(404, "group not found")
+        return {"ok": True}
+
+
+@app.post("/api/groups/{group_id}/members")
+def group_add_member(group_id: int, body: dict, sess: dict = Depends(require_session)):
+    _require_group_manage(sess, group_id)
+    email = (body.get("email") or "").strip()
+    if not email:
+        raise HTTPException(400, "email required")
+    with get_session() as s:
+        access.add_member(s, group_id, email)
+        return {"ok": True}
+
+
+@app.delete("/api/groups/{group_id}/members/{email}")
+def group_remove_member(group_id: int, email: str, sess: dict = Depends(require_session)):
+    _require_group_manage(sess, group_id)
+    with get_session() as s:
+        access.remove_member(s, group_id, email)
+        return {"ok": True}
+
+
+@app.put("/api/groups/{group_id}/members/{email}/sublist")
+def group_set_sublist(group_id: int, email: str, body: dict,
+                      sess: dict = Depends(require_session)):
+    """Group admin sets a member's sublist for one list. Empty list clears it
+    (member then gets the whole group list)."""
+    _require_group_manage(sess, group_id)
+    list_key = body.get("list_key", "")
+    if list_key not in {l["key"] for l in access.ORDERABLE_LISTS}:
+        raise HTTPException(400, "unknown list_key")
+    with get_session() as s:
+        access.set_member_sublist(s, group_id, email, list_key,
+                                  body.get("global_skus", []))
         return {"ok": True}
 
 
@@ -719,9 +815,11 @@ def india_preview(sess: dict = Depends(require_session)):
         if not cached:
             return {"items": [], "warning": "No Odoo snapshot yet — sync first."}
         pull, _ = cached
+        allowed = access.allowed_skus(s, sess.get("login", ""), "INDIA_IMPORT")
     prod = {p["global_sku"]: p for p in pull.products}
     sugg = [x for x in compute_suggestions(pull, CFG)
-            if x.suggested_sea_round or x.suggested_air_round]
+            if (x.suggested_sea_round or x.suggested_air_round)
+            and (allowed is None or x.global_sku in allowed)]
     sugg.sort(key=lambda s: -(s.suggested_sea_round + s.suggested_air_round))
     items = [{"global_sku": s.global_sku, "us_sku": s.us_sku, "name": s.name,
               "category": s.category, "hsn": (prod.get(s.global_sku, {}) or {}).get("hsn_code", ""),
@@ -746,20 +844,23 @@ def india_draft(sess: dict = Depends(require_session)):
         if not cached:
             raise HTTPException(400, "No Odoo snapshot yet — sync first.")
         pull, batch_id = cached
+        email = (sess.get("login", "") or "").lower()
+        allowed = access.allowed_skus(s, email, "INDIA_IMPORT")
+        # Drafts are PER-USER (sublists differ per member). Reuse only this
+        # user's draft built from the current good snapshot; otherwise a stale
+        # draft (older sync) is regenerated with fresh demand + the right SKUs.
         drafts = [o for o in s.exec(select(Order).where(Order.status == "draft")).all()
-                  if (o.config_json or {}).get("channel") != "US_VENDOR"]
-        # Reuse a draft ONLY if it was built from the current good snapshot.
-        # A draft from an older sync is stale: its suggestion_json froze the
-        # demand fields (sell-through / velocity) at creation, so we regenerate
-        # rather than hand back an order with empty/outdated numbers.
+                  if (o.config_json or {}).get("channel") == "INDIA_IMPORT"
+                  and (o.config_json or {}).get("owner") == email]
         fresh = [o for o in drafts if o.snapshot_batch_id == batch_id]
         if fresh:
             o = sorted(fresh, key=lambda x: x.created_at, reverse=True)[0]
             return {"id": o.id, "name": o.name, "reused": True}
         d = datetime.utcnow()
         name = f"Q{(d.month-1)//3+1} {d.year} · {d.date().isoformat()}"
-        order = create_order(s, name, pull, CFG, batch_id=batch_id)
-        order.config_json = {**(order.config_json or {}), "channel": "INDIA_IMPORT"}
+        order = create_order(s, name, pull, CFG, batch_id=batch_id, allowed_skus=allowed)
+        order.config_json = {**(order.config_json or {}),
+                             "channel": "INDIA_IMPORT", "owner": email}
         s.add(order); s.commit()
         return {"id": order.id, "name": order.name, "reused": False}
 
