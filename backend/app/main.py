@@ -25,7 +25,7 @@ def _load_dotenv():
     for _envp in (os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
                   os.path.join(os.path.dirname(__file__), "..", ".env")):
         if os.path.exists(_envp):
-            for _line in open(_envp):
+            for _line in open(_envp, encoding="utf-8"):
                 _line = _line.strip()
                 if _line and not _line.startswith("#") and "=" in _line:
                     _k, _v = _line.split("=", 1)
@@ -97,7 +97,7 @@ def require_list_access(sess: dict, list_key: str) -> None:
 @app.get("/", response_class=HTMLResponse)
 def index():
     if os.path.exists(FRONTEND):
-        with open(FRONTEND) as fh:
+        with open(FRONTEND, encoding="utf-8") as fh:
             return fh.read()
     return "<h1>Frontend not found</h1>"
 
